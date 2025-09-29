@@ -1,0 +1,109 @@
+🔹 Amazon Aurora Interview Q&A
+Q1: What is Amazon Aurora? How is it different from RDS?
+
+👉 Aurora is a fully managed relational DB compatible with MySQL/PostgreSQL. Unlike RDS, Aurora separates compute & storage, offers 5x MySQL / 3x PostgreSQL performance, and auto-scales storage up to 128TB.
+
+Q2: How does Aurora achieve high availability?
+
+👉 It replicates 6 copies of data across 3 Availability Zones. Even if 2 copies fail, DB continues to function.
+
+Q3: Can Aurora be Multi-AZ?
+
+👉 Yes, Aurora is always Multi-AZ by design because storage is distributed across 3 AZs.
+
+Q4: How many read replicas can Aurora support?
+
+👉 Aurora supports up to 15 replicas per cluster.
+
+Q5: How does Aurora handle failover?
+
+👉 If writer node fails, Aurora promotes a replica to be the new writer automatically within 30 seconds typically.
+
+🔹 Aurora Endpoints Interview Q&A
+Q6: What are the different Aurora Endpoints?
+
+👉
+
+Writer endpoint – Handles all write operations.
+
+Reader endpoint – Load balances across all replicas.
+
+Instance endpoint – Connect to a specific DB instance.
+
+Custom endpoint – User-defined group of instances.
+
+Q7: Why do we need Reader endpoint?
+
+👉 To distribute read workloads across replicas automatically without app-side load balancing.
+
+Q8: When to use Instance vs Custom Endpoint?
+
+👉
+
+Instance → When app must connect to one specific instance.
+
+Custom → When grouping specific replicas for reporting/analytics.
+
+🔹 Aurora Read Replica Q&A
+Q9: What is an Aurora Read Replica?
+
+👉 A replica that shares the same storage as writer, providing low-latency read scaling.
+
+Q10: Difference between Aurora Read Replica and RDS Read Replica?
+
+👉
+
+Aurora: Shared storage, near real-time replication.
+
+RDS: Async replication over network, may have lag.
+
+Q11: Can Aurora replicas be promoted?
+
+👉 Yes, Aurora replicas can be promoted to standalone instances or to writer role during failover.
+
+🔹 Delete Aurora Database / Replica Q&A
+Q12: What happens when you delete Aurora DB cluster?
+
+👉 The cluster and instances are removed. Option to create a final snapshot for future recovery.
+
+Q13: Why is it recommended to create a final snapshot before deletion?
+
+👉 To restore database later in case of accidental deletion or requirement rollback.
+
+Q14: Should you delete replicas before deleting the primary cluster?
+
+👉 Yes, always delete read replicas first to avoid dependency issues.
+
+🔹 Cross-Region Read Replica Q&A
+Q15: What is Aurora Cross-Region Replica?
+
+👉 A read replica located in another AWS region, used for disaster recovery and global low-latency access.
+
+Q16: Difference between Multi-AZ and Cross-Region replica?
+
+👉
+
+Multi-AZ → High availability within same region.
+
+Cross-region replica → Disaster recovery & global users in different regions.
+
+Q17: Can you promote a cross-region replica?
+
+👉 Yes, in case of regional outage, you can promote it to a standalone cluster.
+
+🔹 Parameter Groups Q&A
+Q18: What is a Parameter Group in RDS/Aurora?
+
+👉 A collection of engine configuration values applied to DB instances (like max_connections, query_cache_size).
+
+Q19: Can you modify the default parameter group?
+
+👉 No, must create a custom parameter group to apply changes.
+
+Q20: Which parameter changes require reboot?
+
+👉 Static parameters require reboot, while dynamic parameters apply immediately.
+
+Q21: Real example of parameter group usage in Aurora?
+
+👉 Increasing max_connections to handle more app traffic.
