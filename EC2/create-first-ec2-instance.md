@@ -74,6 +74,8 @@ Tag instances for easy management.
 
 🎯 Interview Q&A
 
+
+
 Q1: What is an EC2 instance?
 👉 A virtual server in AWS that provides scalable compute capacity.
 
