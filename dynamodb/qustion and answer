@@ -1,0 +1,142 @@
+1. Basic Concepts
+
+Q1: What is DynamoDB?
+👉 Fully managed NoSQL database by AWS, providing key-value and document data structures with low-latency performance.
+
+Q2: What is a Partition Key?
+👉 The primary key attribute used to distribute data across partitions. Each partition key must be unique unless combined with a Sort Key.
+
+Q3: What is a Sort Key?
+👉 The second part of a composite primary key. Allows multiple items with the same partition key but different sort keys.
+
+Q4: Difference between Partition Key only and Partition + Sort Key?
+👉 Partition Key only → unique key per item.
+👉 Partition + Sort Key → allows 1-to-many relationship within partition.
+
+2. Query vs Scan
+
+Q1: Difference between Query and Scan?
+👉 Query → fetch items using partition key, efficient.
+👉 Scan → reads entire table, applies filter afterward, costly.
+
+Q2: When to use Scan?
+👉 When partition key is unknown, e.g., analytics across the table.
+
+Q3: Can Scan affect performance?
+👉 Yes, reads all items → high RCU consumption.
+
+3. RCU & WCU (Capacity Units)
+
+Q1: What is RCU?
+👉 Read Capacity Unit = 1 strongly consistent read per second for 4 KB item.
+
+Q2: What is WCU?
+👉 Write Capacity Unit = 1 write per second for 1 KB item.
+
+Q3: Difference between On-Demand & Provisioned Capacity?
+👉 On-Demand → pay per request, no RCU/WCU config.
+👉 Provisioned → specify RCU/WCU, can use auto scaling.
+
+4. Indexes
+Local Secondary Index (LSI)
+
+Q1: What is LSI?
+👉 Alternate sort key for the same partition key. Allows multiple query patterns within a partition.
+
+Q2: How many LSIs per table?
+👉 Maximum 5.
+
+Q3: Can you add LSI later?
+👉 No, must define at table creation.
+
+Q4: LSI vs GSI?
+👉 LSI → same partition key, strong consistency, different sort key.
+👉 GSI → different partition key, eventual consistency, can add anytime.
+
+Global Secondary Index (GSI)
+
+Q1: What is GSI?
+👉 Index with different partition key (and optional sort key) to query data not based on table’s primary key.
+
+Q2: How many GSIs per table?
+👉 Maximum 20.
+
+Q3: Can you create GSI after table creation?
+👉 Yes, anytime.
+
+5. Point-in-Time Recovery & Backup
+
+Q1: What is PITR?
+👉 Continuous backup allowing restoration to any second in last 35 days.
+
+Q2: PITR vs On-Demand Backup?
+👉 PITR → automatic, rolling 35-day window.
+👉 On-Demand → manual snapshot, retained until deleted.
+
+Q3: Can PITR overwrite existing table?
+👉 No, creates a new table during restore.
+
+6. Global Tables
+
+Q1: What are Global Tables?
+👉 Multi-region replicated tables supporting active-active read/write.
+
+Q2: How does conflict resolution work?
+👉 Last Writer Wins (based on timestamp).
+
+Q3: Use case of Global Tables?
+👉 Low-latency global access, disaster recovery, high availability.
+
+Q4: Maximum regions?
+👉 Up to 5 regions.
+
+7. Export/Import to S3
+
+Q1: Why export DynamoDB to S3?
+👉 Backup, analytics, or integration with data lake/ETL pipelines.
+
+Q2: Can import overwrite an existing table?
+👉 No, imports always create a new table.
+
+Q3: Supported formats?
+👉 Parquet or DynamoDB JSON.
+
+8. Deleting Tables
+
+Q1: How to delete a table?
+👉 aws dynamodb delete-table --table-name <TableName> or via Console.
+
+Q2: Are indexes deleted automatically?
+👉 Yes, LSIs and GSIs are deleted.
+
+Q3: Does PITR get disabled automatically?
+👉 Yes.
+
+Q4: Can you recover deleted table?
+👉 Only from backups or exported data.
+
+9. DynamoDB Best Practices (Interview Points)
+
+Prefer Query over Scan for production workloads.
+
+Enable PITR for critical tables.
+
+Use Global Tables for multi-region applications.
+
+Use Indexes (LSI/GSI) only for required access patterns.
+
+Monitor RCU/WCU usage to optimize cost.
+
+Keep item size small to reduce capacity consumption.
+
+✅ This is a complete consolidated Q&A covering all DynamoDB topics we created notes for:
+
+Basics, Query vs Scan, RCU/WCU
+
+Sort Key, LSI, GSI
+
+PITR & Backups, Global Tables
+
+Export/Import S3, Delete Table
+
+Best practices
