@@ -1,3 +1,4 @@
+
 📘 Overview
 
 Accessing a Windows EC2 instance from a Linux machine requires RDP client tools.
@@ -64,6 +65,7 @@ Enable NLA (Network Level Authentication)
 Monitor login attempts with CloudWatch logs
 
 Consider bastion host or VPN for secure access
+
 
 🎯 Interview Q&A
 
