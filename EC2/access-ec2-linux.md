@@ -1,3 +1,4 @@
+
 📘 What is EC2 Instance Connect (Linux)?
 
 EC2 Instance Connect allows secure SSH access to Linux EC2 instances.
@@ -57,6 +58,7 @@ Use EC2 Instance Connect for temporary access instead of storing keys.
 Enable CloudWatch logs to monitor SSH access.
 
 Disable root login if using key pairs.
+
 
 🎯 Interview Q&A
 
