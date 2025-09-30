@@ -74,6 +74,8 @@ Use IAM roles for accessing AWS resources
 
 Enable CloudWatch monitoring for instance health
 
+
+
 🎯 Interview Q&A
 
 Q1: How do you create a Windows EC2 instance?
