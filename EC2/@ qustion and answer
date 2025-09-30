@@ -1,0 +1,134 @@
+1. EC2 Basics
+
+Q1: What is EC2?
+👉 Amazon EC2 is a web service that provides resizable compute capacity in the cloud.
+
+Q2: What are key pairs in EC2?
+👉 Key pairs (.pem) are used for secure SSH or RDP access to instances.
+
+Q3: What is the difference between On-Demand, Reserved, and Spot Instances?
+👉
+
+On-Demand → pay per hour, no commitment
+
+Reserved → 1 or 3 years commitment, discounted
+
+Spot → bid for unused capacity, can be interrupted
+
+2. Connecting to EC2
+
+Q4: How do you connect to a Linux EC2 instance?
+👉 Use SSH with the .pem key or EC2 Instance Connect (browser).
+
+Q5: Default username for Amazon Linux 2?
+👉 ec2-user
+
+Q6: Default username for Ubuntu EC2?
+👉 ubuntu
+
+Q7: How do you connect to a Windows EC2 instance?
+👉 Use RDP client, Administrator username, and decrypted password from key pair.
+
+Q8: How do you access a Windows instance from Linux?
+👉 Use RDP client (Remmina, xfreerdp) with decrypted Administrator password.
+
+Q9: Which port is required for SSH and RDP?
+👉 SSH → 22, RDP → 3389
+
+3. Nginx and Application Deployment
+
+Q10: How do you install Nginx on EC2 Linux?
+👉 SSH → sudo yum install nginx -y (Amazon Linux) → start & enable service
+
+Q11: Where do you place HTML files for Nginx?
+👉 /usr/share/nginx/html/
+
+Q12: How do you make Nginx start on reboot?
+👉 sudo systemctl enable nginx
+
+4. User Data & Bootstrap Scripts
+
+Q13: What is EC2 User Data?
+👉 Scripts provided at launch to configure instances automatically.
+
+Q14: When does User Data execute?
+👉 Only during the first boot of the instance.
+
+Q15: How can you verify if User Data ran successfully?
+👉 Linux → /var/log/cloud-init-output.log
+Windows → Event Viewer or script output
+
+5. Security Groups
+
+Q16: What is a Security Group?
+👉 Virtual firewall controlling inbound/outbound traffic for EC2.
+
+Q17: Is a Security Group stateful or stateless?
+👉 Stateful – return traffic is automatically allowed.
+
+Q18: Difference between Security Group and NACL?
+👉 SG → instance-level, stateful, allow rules only
+NACL → subnet-level, stateless, allow & deny rules
+
+Q19: Best practices for Security Groups?
+👉 Restrict SSH/RDP to specific IPs, separate SGs for layers, monitor with Flow Logs
+
+6. EC2 Instance Types
+
+Q20: What is an EC2 instance type?
+👉 Defines hardware configuration: CPU, RAM, storage, network.
+
+Q21: Name main categories of EC2 instances.
+👉 General Purpose, Compute Optimized, Memory Optimized, Storage Optimized, GPU/Accelerated Computing
+
+Q22: Which instance type is best for memory-intensive workloads?
+👉 Memory Optimized (r5, x1)
+
+7. EC2 Pricing
+
+Q23: Difference between On-Demand, Reserved, Spot, Savings Plan, Dedicated Host?
+👉
+
+On-Demand → pay as you go
+
+Reserved → 1-3 years, discounted
+
+Spot → bid for unused capacity
+
+Savings Plan → flexible commitment for discounts
+
+Dedicated Host → physical server dedicated to your account
+
+Q24: When would you use a Spot Instance?
+👉 Fault-tolerant or batch workloads to save cost
+
+8. Elastic IP
+
+Q25: What is an Elastic IP?
+👉 Static public IPv4 address for EC2 that doesn’t change on stop/start
+
+Q26: Difference between public IP and Elastic IP?
+👉 Public IP → changes after stop/start
+Elastic IP → static, persistent
+
+Q27: How do you attach/detach/release an Elastic IP?
+👉 Attach → Allocate EIP → Associate with instance
+Detach → Disassociate
+Release → Return EIP to AWS
+
+Q28: Will AWS charge for unused Elastic IP?
+👉 Yes, if allocated but not associated with a running instance
+
+9. Instance Metadata
+
+Q29: What is EC2 instance metadata?
+👉 Data about the instance (ID, IP, AMI, security groups) accessible internally
+
+Q30: How to access metadata and user data from Linux?
+
+curl http://169.254.169.254/latest/meta-data/
+curl http://169.254.169.254/latest/user-data
+
+
+Q31: Why is metadata important?
+👉 Useful for automation, monitoring, and dynamic configuration
