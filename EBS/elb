@@ -1,0 +1,261 @@
+🌐 Elastic Load Balancer (ELB) – Complete Deep Notes
+🧩 1. What is Elastic Load Balancer (ELB)?
+
+ELB (Elastic Load Balancer) automatically distributes incoming traffic across multiple EC2 instances, containers, or IPs within one or more Availability Zones.
+
+It ensures:
+
+High availability
+
+Fault tolerance
+
+Scalability
+
+Health monitoring
+
+Think of it as a traffic manager for your AWS servers.
+
+💡 Example
+
+Imagine you have 3 EC2 web servers behind one load balancer.
+When users access your website, the ELB automatically divides requests among all healthy servers.
+
+🧱 2. Types of Load Balancers in AWS
+Load Balancer	Layer	Use Case	Protocols	Example
+Classic Load Balancer (CLB)	Layer 4 & 7	Legacy applications	HTTP, HTTPS, TCP	Old web servers
+Application Load Balancer (ALB)	Layer 7	Modern web apps (routing, microservices)	HTTP, HTTPS	Web apps, APIs
+Network Load Balancer (NLB)	Layer 4	High-performance, low-latency apps	TCP, UDP	Gaming, real-time apps
+Gateway Load Balancer (GLB)	Layer 3	Security appliances (firewall, IPS)	IP	Firewalls, proxy
+⚙️ 3. Classic Load Balancer (CLB)
+📘 Overview
+
+Operates at Layer 4 & Layer 7.
+
+Distributes traffic evenly between EC2 instances.
+
+Checks instance health using health checks.
+
+Older model, being replaced by ALB/NLB.
+
+🪜 Steps: Create Classic Load Balancer
+
+Go to EC2 → Load Balancers → Create Load Balancer
+
+Choose Classic Load Balancer
+
+Configure:
+
+Name: my-clb
+
+Listener: HTTP (port 80)
+
+Add at least 2 EC2 instances under the same VPC/subnet.
+
+Configure Health Check path (/index.html)
+
+Review → Create
+
+⚙️ Access via Load Balancer
+
+Once created, note the DNS name:
+
+my-clb-123456789.ap-south-1.elb.amazonaws.com
+
+
+Access in browser — it routes traffic to all healthy EC2s.
+
+💡 Health Checks
+
+CLB continuously checks the health of instances.
+If an instance fails health checks, ELB stops routing traffic to it.
+
+🔁 4. Access EC2 via Load Balancer Only
+
+You can restrict direct access to instances:
+
+Security Group (SG) of EC2: allow traffic only from Load Balancer’s SG.
+
+Users connect via ELB DNS → ELB forwards to EC2.
+
+✅ Improves security and hides EC2 public IP.
+
+🗑 5. Delete Classic Load Balancer
+
+Go to EC2 → Load Balancers → Select → Delete
+
+Ensure DNS name is no longer active.
+
+🧠 6. Application Load Balancer (ALB)
+📘 Overview
+
+Operates at Layer 7 (HTTP/HTTPS).
+
+Smart routing: can route based on path, host, headers, or query string.
+
+Supports microservices, containers, and ECS/EKS.
+
+🧩 ALB Architecture
+Client → ALB → Target Group → EC2 Instances
+
+
+Listeners: define incoming protocol/port (e.g., HTTP:80)
+
+Target Groups: group of EC2s or containers
+
+Rules: route based on URL path or hostname
+
+🪜 Steps: Create ALB
+
+Go to EC2 → Load Balancers → Create Load Balancer
+
+Select Application Load Balancer
+
+Configure:
+
+Name: my-alb
+
+Scheme: internet-facing
+
+Listeners: HTTP (80)
+
+Add subnets from 2 AZs for high availability.
+
+Create Target Group:
+
+Type: Instances
+
+Protocol: HTTP (80)
+
+Health check path: /
+
+Register EC2s in Target Group.
+
+Create ALB.
+
+🧭 7. Path-Based Routing (ALB Feature)
+
+You can route based on URL path:
+
+URL Path	Target Group
+/app1/*	App1 servers
+/app2/*	App2 servers
+
+Example Rule:
+
+IF path is /api/* → forward to API Target Group.
+
+🌍 8. Host-Based Routing (ALB Feature)
+
+Route traffic based on domain name.
+
+Domain	Target Group
+app1.example.com	App1 EC2s
+app2.example.com	App2 EC2s
+
+This is commonly used in multi-domain applications.
+
+🔄 9. Stickiness (Session Affinity)
+
+Ensures user requests always go to the same backend EC2.
+
+Useful for login sessions or shopping carts.
+
+Enable in Target Group settings:
+
+Type: Application-based cookie or Duration-based cookie.
+
+🕵️ 10. Get Client IP in Application Server
+
+When traffic goes through ALB, the real client IP is hidden.
+To capture the client IP:
+
+Check the X-Forwarded-For header in your web server logs.
+
+Example (Nginx):
+
+log_format main '$remote_addr forwarded_for=$http_x_forwarded_for';
+
+⚡ 11. Network Load Balancer (NLB)
+📘 Overview
+
+Operates at Layer 4 (TCP/UDP).
+
+Designed for millions of requests per second.
+
+Very low latency, static IP support.
+
+💡 Use Cases
+
+Financial applications
+
+Gaming servers
+
+Real-time data streaming
+
+🪜 Steps: Create NLB
+
+Go to Load Balancers → Create → Network Load Balancer
+
+Name: my-nlb
+
+Scheme: internet-facing
+
+Listeners: TCP 80 or 443
+
+Add subnets → 2 AZs
+
+Create Target Group (TCP)
+
+Register instances
+
+Create.
+
+💡 NLB provides 1 static IP per AZ — great for whitelisting firewalls.
+
+🔁 12. Auto Scaling Integration with ELB
+
+Combine ELB + Auto Scaling Group (ASG) for fault tolerance:
+
+ELB distributes traffic.
+
+ASG automatically launches/replaces unhealthy EC2s.
+
+✅ Traffic distribution + instance lifecycle automation.
+
+🔒 13. Security Groups for ELB
+Resource	Inbound	Outbound
+Load Balancer	Allow 80/443 (public)	To Target Group
+EC2 Instances	Allow from ELB SG	Outbound to anywhere
+🧾 14. ELB Monitoring (Metrics)
+Metric	Description
+RequestCount	Number of requests handled
+HealthyHostCount	Healthy targets
+UnHealthyHostCount	Failed targets
+TargetResponseTime	Average response time
+HTTPCode_Target_5XX	Backend errors
+
+Use CloudWatch for alerts.
+
+🧹 15. Delete ALB or NLB
+
+Go to Load Balancers → Select → Delete.
+
+Delete associated Target Groups to avoid charges.
+
+🧠 16. Interview Questions – Elastic Load Balancer
+❓ Question	💡 Answer
+What is ELB?	Distributes traffic across multiple EC2 instances for high availability.
+Types of Load Balancers?	CLB, ALB, NLB, Gateway LB.
+Difference between ALB and NLB?	ALB = HTTP (Layer 7); NLB = TCP (Layer 4).
+What is Path-based Routing?	Routes traffic based on URL path like /api/.
+What is Host-based Routing?	Routes based on hostname like api.example.com.
+What is Stickiness?	Keeps user sessions on the same backend EC2.
+How to find client IP behind ALB?	Using X-Forwarded-For header.
+What’s the use of Target Group?	Logical group of instances where ALB sends traffic.
+Can we attach ELB to multiple AZs?	Yes, at least two for HA.
+Difference between Classic and Application LB?	CLB = basic, ALB = smart routing & microservices.
+What is the listener in ALB?	A process that checks for incoming connections (port/protocol).
+Does NLB support static IPs?	Yes, one per AZ.
+Can ALB handle WebSocket or HTTP/2?	Yes, fully supported.
+How ELB detects unhealthy instances?	Health checks (HTTP, TCP, HTTPS).
+What is Cross-Zone Load Balancing?	Evenly distributes traffic across AZs.
