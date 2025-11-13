@@ -1,0 +1,287 @@
+⚙️ Auto Scaling Group (ASG) – Complete Deep Notes
+🧩 1. What is Auto Scaling Group (ASG)?
+
+An Auto Scaling Group (ASG) automatically manages the number of EC2 instances in a group based on demand.
+
+✅ Main Purpose:
+To maintain the right number of EC2 instances to handle the load.
+
+💡 Example:
+
+If CPU usage increases beyond 70%, ASG launches new EC2 instances.
+If usage drops, it terminates unnecessary instances → saving cost.
+
+🧠 2. Key Components of Auto Scaling
+Component	Description
+Launch Template / Launch Configuration	Defines how new EC2 instances will be created (AMI, instance type, key pair, SG, etc.)
+Auto Scaling Group (ASG)	Logical group of EC2 instances managed together
+Scaling Policies	Rules that define when and how to scale
+Health Checks	Automatically detect unhealthy instances
+Elastic Load Balancer (ELB)	Distributes traffic among instances in ASG
+🧰 3. Launch Template (Recommended)
+
+A Launch Template contains configuration to create EC2 instances automatically.
+
+🧩 Includes:
+
+AMI ID
+
+Instance Type
+
+Key Pair
+
+Security Group
+
+User Data (startup script)
+
+IAM Role
+
+🪜 Steps: Create Launch Template
+
+Go to EC2 → Launch Templates → Create template
+
+Enter:
+
+Name: my-launch-template
+
+AMI: Amazon Linux 2
+
+Instance Type: t2.micro
+
+Key pair: select existing
+
+Security Group: allow HTTP (80)
+
+Add User Data:
+
+#!/bin/bash
+sudo yum update -y
+sudo yum install httpd -y
+echo "<h1>Hello from Auto Scaling Instance $(hostname -f)</h1>" > /var/www/html/index.html
+sudo systemctl start httpd
+sudo systemctl enable httpd
+
+
+Create template ✅
+
+🏗 4. Create Auto Scaling Group (ASG)
+🪜 Steps:
+
+Go to EC2 → Auto Scaling Groups → Create
+
+Choose Launch Template → select my-launch-template
+
+Set Group Name: my-auto-scaling-group
+
+Choose VPC & Subnets (min 2 AZs) for High Availability
+
+Attach to Existing Load Balancer (Optional) → select ALB or NLB
+
+Configure Group Size:
+
+Desired Capacity: 2
+
+Minimum Capacity: 1
+
+Maximum Capacity: 4
+
+Add Health Check Type: EC2 + ELB
+
+Add Scaling Policies (explained below)
+
+Review → Create ✅
+
+🔁 5. Scaling Policies
+
+Auto Scaling policies define when to add or remove EC2 instances.
+
+📈 1. Target Tracking Policy
+
+Maintains a specific metric target.
+
+Example:
+
+Target metric: Average CPU Utilization
+
+Target value: 60%
+
+👉 If CPU > 60% → add instance
+👉 If CPU < 60% → remove instance
+
+✅ Easiest and most commonly used.
+
+⚙️ 2. Step Scaling Policy
+
+Scale in steps based on thresholds.
+
+Example:
+
+Metric	Action
+CPU > 70%	Add 1 instance
+CPU > 85%	Add 2 instances
+CPU < 40%	Remove 1 instance
+🧮 3. Simple Scaling Policy
+
+Trigger scaling action based on CloudWatch Alarm.
+
+Example:
+
+If CPUUtilization > 80% for 5 minutes → Add 1 instance
+
+⚡ 4. Scheduled Scaling
+
+Automatically scale at specific times (e.g., business hours).
+
+Example:
+
+Increase to 4 instances at 9 AM
+
+Decrease to 1 instance at 9 PM
+
+🧠 6. ASG Health Checks
+
+ASG automatically replaces unhealthy EC2 instances.
+
+🔍 Types:
+
+EC2 Health Check: if instance is stopped or terminated → replaced.
+
+ELB Health Check: checks if instance fails load balancer’s health check.
+
+🌍 7. ASG + Load Balancer Integration
+
+When ASG integrates with ELB:
+
+New EC2 instances are automatically registered with Load Balancer.
+
+If instance fails → removed from ELB + replaced by ASG.
+
+✅ Ensures seamless traffic routing & fault tolerance.
+
+💾 8. Instance Refresh
+
+Allows you to update running instances with a new Launch Template version:
+
+Rolling update
+
+No downtime
+
+Old instances terminated gradually
+
+Example:
+When you update AMI in Launch Template → ASG replaces instances one-by-one.
+
+🧱 9. Lifecycle Hooks
+
+Lifecycle hooks let you run custom actions when instances:
+
+Launch (Pending:Wait)
+
+Terminate (Terminating:Wait)
+
+💡 Example: run configuration script or send notification to SNS before terminating.
+
+⚙️ 10. Cooldown Period
+
+Cooldown period = waiting time before triggering next scaling action (default 300 seconds).
+
+✅ Prevents too many scale-in/out actions in a short time.
+
+💸 11. Cost Optimization
+
+Use Spot Instances with ASG to reduce cost.
+
+Configure Mixed Instance Policy → combine On-Demand + Spot instances.
+
+Example:
+50% On-Demand, 50% Spot → same performance, 70% cheaper.
+
+🧮 12. ASG Metrics (via CloudWatch)
+Metric	Description
+GroupInServiceInstances	Running healthy instances
+GroupPendingInstances	Instances being launched
+GroupTerminatingInstances	Instances being terminated
+GroupDesiredCapacity	Desired number of instances
+GroupTotalInstances	Total instances managed
+🧹 13. Delete Auto Scaling Group
+
+Go to EC2 → Auto Scaling Groups
+
+Select your group → Actions → Delete
+
+Confirm deletion
+💡 Tip: Delete Launch Template separately if not needed.
+
+🧩 14. Real-Life Use Case Example
+
+Scenario: E-commerce website with variable traffic.
+
+During sale events → traffic spikes
+
+At night → low traffic
+
+✅ Solution:
+
+ASG minimum = 1, maximum = 6
+
+Target tracking = 50% CPU
+
+Connect to ALB
+
+Result → automatic scaling without manual intervention.
+
+🧠 15. Interview Questions – Auto Scaling Group (ASG)
+❓ Question	💡 Answer
+What is Auto Scaling?	Automatically adjusts EC2 capacity based on demand.
+What is Launch Template?	Blueprint for creating EC2 instances in ASG.
+Difference between Launch Config & Launch Template?	Template supports versioning, mixed instances; Config is legacy.
+What are Scaling Policies?	Rules that control how and when to scale.
+What is Target Tracking Policy?	Maintains metric target like CPU = 60%.
+What is Step Scaling?	Adds/removes instances in steps.
+What is Scheduled Scaling?	Scaling based on specific time or date.
+What are Lifecycle Hooks?	Custom actions before/after instance launch or terminate.
+What is Health Check in ASG?	Detects and replaces unhealthy instances.
+Difference between EC2 & ELB health check?	EC2 = instance state; ELB = traffic health.
+What is Cooldown Period?	Time delay to prevent rapid scaling.
+What is Instance Refresh?	Rolling update of instances in ASG.
+What is Desired, Min, Max Capacity?	Desired = target count, Min = minimum, Max = upper limit.
+What happens when instance fails?	ASG terminates it and launches a new one.
+Can ASG use multiple instance types?	Yes, via Mixed Instance Policy.
+Does ASG work across AZs?	Yes, distributes across multiple AZs.
+How does ASG help in cost optimization?	Scales down during low usage, can use Spot Instances.
+What is the default cooldown period?	300 seconds (5 minutes).
+How do you update Launch Template version in ASG?	Edit ASG → choose latest version → Instance Refresh.
+Can ASG work without Load Balancer?	Yes, but less fault-tolerant.
+🚀 16. Key Benefits Summary
+
+✅ High Availability
+✅ Fault Tolerance
+✅ Cost Efficiency
+✅ Automatic Scaling
+✅ Easy Maintenance with Instance Refresh
+✅ Integration with ELB, CloudWatch, SNS, etc.
+
+🧾 17. Practical Example (End-to-End Flow)
+
+Scenario:
+You host a website with variable traffic.
+
+Create Launch Template with web server script.
+
+Create Auto Scaling Group with:
+
+Min = 1
+
+Max = 5
+
+Target = 50% CPU
+
+Load Balancer = attached
+
+When CPU rises → new EC2s launched
+
+When CPU drops → EC2s terminated
+
+Users always get balanced & healthy servers
+
+💡 Result: 100% uptime + cost efficiency.
