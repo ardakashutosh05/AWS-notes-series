@@ -1,0 +1,288 @@
+🧩 1. What is Amazon EBS?
+
+Amazon EBS (Elastic Block Store) provides persistent block storage volumes for EC2 instances.
+
+Think of it like an external hard drive for your EC2.
+
+It persists even after instance termination (if you choose so).
+
+It’s highly available and replicated within an AZ.
+
+⚙️ Key Points:
+Feature	Description
+Type	Block storage (like HDD/SSD)
+Scope	Works within the same Availability Zone
+Durability	Replicated automatically within AZ
+Attach	You can attach/detach anytime
+Backup	Snapshots stored in S3
+Encryption	Built-in at rest + in transit
+Use Cases	Databases, Boot volumes, File systems, Big data apps
+🧠 EBS vs Instance Store
+Feature	EBS Volume	Instance Store
+Persistence	Data persists after stop/restart	Data lost after stop/terminate
+Attachment	Can be attached/detached	Fixed to instance
+Backup	Supports Snapshots	No backup possible
+Performance	SSD/HDD options	Very high performance (temporary)
+Cost	Pay for storage	Included with instance
+Use Case	Databases, long-term storage	Temporary cache, buffer data
+🪜 2. Create First Elastic Block Store Volume
+Step-by-Step:
+
+Go to EC2 → Elastic Block Store → Volumes
+
+Click Create Volume
+
+Volume type: gp3 (General Purpose SSD)
+
+Size: 8 GiB
+
+Availability Zone: us-east-1a
+
+Click Create Volume
+
+Select the volume → Actions → Attach Volume
+
+Choose an EC2 Instance in the same AZ
+
+Note device name: /dev/xvdf
+
+Connect to EC2:
+lsblk
+
+
+You’ll see /dev/xvdf (unmounted).
+
+Format & Mount EBS Volume:
+sudo mkfs -t ext4 /dev/xvdf
+sudo mkdir /data
+sudo mount /dev/xvdf /data
+
+
+Verify:
+
+df -h
+
+
+💡 Now your EBS volume is ready for use!
+
+🔁 3. Detach an EBS Volume and Attach to Another EC2
+Steps:
+
+Stop the first EC2 instance.
+
+Go to EC2 → Volumes → Select volume → Detach Volume.
+
+Once detached → Attach it to another EC2 (same AZ).
+
+On the new instance:
+
+sudo mkdir /newdata
+sudo mount /dev/xvdf /newdata
+
+
+✅ You’ve migrated your volume data successfully.
+
+📏 4. Resize EBS Volume and File System
+
+You can increase the size or change the volume type without downtime.
+
+Steps:
+
+Go to EC2 → Volumes → Modify Volume
+
+Increase size (e.g., 8 GB → 20 GB)
+
+Wait for modification → state = optimizing
+
+Then inside EC2:
+
+sudo growpart /dev/xvdf 1
+sudo resize2fs /dev/xvdf
+
+
+✅ Volume resized successfully.
+
+🧱 5. Resize Root EBS Volume
+
+When you launch EC2, root EBS (e.g., /dev/xvda) may be small.
+
+To resize:
+
+Stop instance.
+
+Go to Volumes → Modify Volume → Increase Size.
+
+Start instance again.
+
+Inside instance:
+
+sudo growpart /dev/xvda 1
+sudo resize2fs /dev/xvda1
+
+
+✅ Root filesystem now uses full disk.
+
+🔗 6. Attach One EBS Volume to Multiple EC2 Instances
+
+⚠️ Normally, EBS can attach to one EC2 at a time.
+But EBS Multi-Attach (io1/io2) allows multiple EC2s in the same AZ to access one volume concurrently.
+
+Used in:
+
+Clustered databases (Oracle RAC)
+
+Shared storage systems
+
+Requirements:
+
+Volume type: io1 or io2
+
+Same AZ
+
+EC2 instances with Nitro system
+
+⚙️ 7. EBS Volume Types
+Type	Description	Use Case
+gp3	General Purpose SSD (3,000 IOPS baseline)	Default for most workloads
+gp2	Older SSD (IOPS linked to size)	Legacy workloads
+io1 / io2	Provisioned IOPS SSD	Databases, latency-sensitive
+st1	Throughput optimized HDD	Big data, log processing
+sc1	Cold HDD	Infrequent access data, backups
+
+💡 Best Practice:
+Use gp3 for general workloads → cheap + consistent performance.
+
+🧩 8. Snapshot Overview
+
+A Snapshot is a point-in-time backup of your EBS volume stored in S3.
+
+Incremental (only changed blocks are saved)
+
+Can restore to new volume
+
+Can copy across regions/accounts
+
+📸 9. Create First Snapshot
+Steps:
+
+Go to EC2 → Volumes
+
+Select volume → Actions → Create Snapshot
+
+Add description → “Backup before upgrade”
+
+Snapshot stored in EC2 → Snapshots
+
+To restore:
+
+Actions → Create Volume from Snapshot
+
+⚙️ 10. Automate EBS Backups with Lifecycle Manager
+
+EBS Lifecycle Manager automates snapshot creation & deletion.
+
+Steps:
+
+Go to EC2 → Lifecycle Manager → Create Policy
+
+Select resource type: Volume
+
+Define:
+
+Schedule: daily/weekly
+
+Retain snapshots for 7 days
+
+Create policy ✅
+
+💡 Automatically keeps your backups clean & up to date.
+
+🗑 11. Snapshot and AMI Recycle Bin
+
+AWS offers Recycle Bin for accidental snapshot or AMI deletion recovery.
+
+You can define retention rules.
+
+Deleted resources stay recoverable for a set period.
+
+🌍 12. Copy Snapshot Across Regions / Accounts
+
+Used for disaster recovery or migration.
+
+Steps:
+
+Select Snapshot → Actions → Copy Snapshot
+
+Choose:
+
+Destination Region
+
+Encryption (optional)
+
+Click Copy ✅
+
+💡 You can also share snapshots with another AWS account.
+
+🔐 13. Encrypt EBS Volumes
+
+Encryption is AES-256 and handled by AWS KMS.
+
+Action	Encrypted Automatically
+Create new EBS volume	✅
+Create snapshot from encrypted volume	✅
+Copy encrypted snapshot	✅
+Restore from encrypted snapshot	✅
+
+💡 You can also encrypt an unencrypted volume by:
+
+Taking snapshot → copying snapshot with encryption → creating new encrypted volume.
+
+🧹 14. Delete EBS Volume / Snapshot
+Delete EBS Volume:
+
+Detach from EC2
+
+Select → Actions → Delete Volume
+
+Delete Snapshot:
+
+EC2 → Snapshots → Select → Delete Snapshot
+
+💡 Tip: Use Lifecycle Manager for automatic cleanup.
+
+🧠 15. Interview Questions – Amazon EBS
+❓ Question	💡 Answer
+What is EBS?	Persistent block storage for EC2 instances.
+Difference between EBS & Instance Store?	EBS = persistent, Instance Store = temporary.
+Can you attach one EBS volume to multiple EC2s?	Only io1/io2 with Multi-Attach in same AZ.
+What is a Snapshot?	Point-in-time backup of EBS volume.
+Where are Snapshots stored?	In S3 (managed by AWS).
+Are Snapshots incremental?	Yes, only changed blocks saved.
+How do you restore a volume?	Create Volume from Snapshot.
+What is EBS Lifecycle Manager?	Automates snapshot backups and cleanup.
+What happens if I encrypt a volume?	Data is encrypted at rest and in transit.
+What is gp3?	General-purpose SSD with independent IOPS.
+Difference between gp2 & gp3?	gp3 has fixed IOPS (3000) regardless of size.
+How do you resize EBS volume?	Modify → growpart → resize2fs.
+Can you decrease EBS size?	❌ No, only increase.
+How to copy snapshot to another region?	Actions → Copy Snapshot.
+What is Recycle Bin for Snapshot?	Retains deleted snapshots for recovery.
+Can you share EBS Snapshot?	Yes, across AWS accounts.
+How do you automate EBS backups?	Use Lifecycle Manager.
+What is Multi-Attach EBS?	io1/io2 volume accessible by multiple EC2s.
+What is difference between Snapshot and AMI?	Snapshot = volume backup, AMI = full instance backup (includes root + metadata).
+✅ 16. Summary
+
+EBS = Persistent block storage
+
+Snapshots = Incremental backups stored in S3
+
+Lifecycle Manager = Automatic backup policy
+
+gp3 = Best general-purpose SSD
+
+io2 = For high-performance databases
+
+Multi-Attach = For clustered apps
+
+Encryption = Default best practice
