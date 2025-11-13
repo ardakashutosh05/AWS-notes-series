@@ -1,0 +1,407 @@
+🧑‍💻 AWS IAM (Identity and Access Management) – Deep Dive Notes
+🌍 1. What is AWS IAM?
+
+IAM (Identity and Access Management) is a global AWS service used to securely control access to AWS resources.
+
+👉 It helps you manage who can do what in your AWS account.
+
+🧩 Example:
+
+You (Admin) can create:
+
+👤 Users – individual people or services
+
+👥 Groups – collection of users
+
+🔐 Policies – permissions attached to users/groups
+
+🎭 Roles – temporary credentials for AWS resources (like EC2 → S3 access)
+
+🧠 2. Why is IAM Important?
+Feature	Description
+🔒 Security	Controls access using least privilege
+⚙️ Flexibility	Create fine-grained permissions
+🌐 Centralized Management	One place to manage all identities
+🔁 Temporary Access	Via IAM Roles
+🧩 Integration	Works with every AWS service
+🏗️ 3. Core Components of IAM
+Component	Description
+Users	Individual accounts (e.g., Developer1, Admin)
+Groups	Collection of users (e.g., DevTeam, OpsTeam)
+Roles	Assign temporary permissions to AWS resources
+Policies	JSON documents defining permissions
+Identity Provider (IdP)	For SSO (e.g., Google, Azure AD)
+🧰 4. IAM Users
+
+Each user gets Access key and Secret key (for CLI/SDK).
+
+Users can be assigned policies directly or via groups.
+
+🪜 Create IAM User:
+
+Go to IAM → Users → Add User
+
+Enter user name: developer1
+
+Access type:
+
+✅ Console access (password)
+
+✅ Programmatic access (CLI)
+
+Attach policy: AmazonS3FullAccess
+
+Create user ✅
+
+👥 5. IAM Groups
+
+Groups simplify permission management for multiple users.
+
+Example:
+
+Group: Developers
+
+Policy: AmazonEC2FullAccess
+
+Add users: dev1, dev2
+
+All users in the group inherit permissions from that policy.
+
+🧾 6. IAM Policies
+
+Policies define permissions in JSON format.
+
+Example: Allow full access to S3
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "s3:*",
+      "Resource": "*"
+    }
+  ]
+}
+
+Example: Allow only EC2 start/stop
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ec2:StartInstances",
+        "ec2:StopInstances"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+
+🔐 7. IAM Password Policy
+
+You can enforce a strong password policy for all users.
+
+🪜 Set Password Policy:
+
+Go to IAM → Account Settings → Password Policy
+
+Enable:
+
+Minimum length (e.g., 8)
+
+Require uppercase/lowercase
+
+Require numbers and symbols
+
+Password expiration (90 days)
+
+Prevent password reuse
+
+This improves account-level security 🔒
+
+📱 8. AWS Multi-Factor Authentication (MFA)
+🧩 What is MFA?
+
+An extra layer of security beyond password.
+
+User must provide:
+
+Password
+
+MFA code (from device)
+
+🪜 Enable MFA:
+
+IAM → Users → Select User → Security Credentials
+
+Assign MFA device:
+
+Virtual MFA (Google Authenticator / Authy)
+
+Hardware MFA device
+
+Scan QR → Enter 2 codes → Enable ✅
+
+Now login requires OTP each time 🔐
+
+💻 9. AWS CLI (Command Line Interface)
+
+CLI allows you to manage AWS resources using terminal commands.
+
+🪜 Install AWS CLI (Linux):
+sudo apt install awscli -y
+
+🪜 Configure AWS CLI:
+aws configure
+
+
+Enter:
+
+AWS Access Key ID [None]: <your-access-key>
+AWS Secret Access Key [None]: <your-secret-key>
+Default region name [None]: ap-south-1
+Default output format [None]: json
+
+
+Now your CLI is connected ✅
+
+🧠 Example Commands:
+Command	Description
+aws s3 ls	List all S3 buckets
+aws ec2 describe-instances	Show all EC2 instances
+aws iam list-users	List all IAM users
+aws ec2 start-instances --instance-ids i-123456	Start EC2 instance
+aws ec2 stop-instances --instance-ids i-123456	Stop EC2 instance
+🧑‍🤝‍🧑 10. Handle Multiple AWS Accounts in CLI
+
+You can configure multiple profiles.
+
+🪜 Add New Profile:
+aws configure --profile devaccount
+
+
+To use that profile:
+
+aws s3 ls --profile devaccount
+
+
+💡 Each profile can have different keys and regions.
+
+🎭 11. AWS IAM Roles
+
+Roles are like temporary users for AWS services.
+
+Example:
+
+Allow EC2 instance to access S3 without using Access Keys.
+
+🪜 Steps:
+
+IAM → Roles → Create Role
+
+Trusted Entity: EC2
+
+Attach Policy: AmazonS3ReadOnlyAccess
+
+Launch EC2 → Attach this Role
+
+Now your EC2 can run:
+
+aws s3 ls
+
+
+✅ without any access key!
+
+☁️ 12. AWS CloudShell
+
+CloudShell = browser-based terminal to run AWS CLI commands directly.
+
+Features:
+
+Pre-authenticated (no need to configure credentials)
+
+Linux shell environment
+
+Can run aws, git, python3, etc.
+
+To use:
+
+Click CloudShell icon in top menu of AWS Console.
+
+🧾 13. IAM Access Advisor
+
+Shows which services each user has recently used.
+
+Helps remove unused permissions (principle of least privilege).
+
+To view:
+
+Go to IAM → Users → Access Advisor
+
+See service usage history.
+
+🧾 14. IAM Credential Report
+
+CSV file showing all users, password last used, MFA enabled, etc.
+
+Helps in security auditing.
+
+To generate:
+
+IAM → Credential Report → Download Report
+
+Opens CSV file with:
+
+user, mfa_active, password_last_used, etc.
+
+☁️ Amazon S3 (Simple Storage Service)
+🧩 15. Introduction to S3
+
+Amazon S3 is an object storage service to store and retrieve any amount of data from anywhere on the internet.
+
+🔹 Key Features:
+Feature	Description
+Infinite storage	Store unlimited data
+Highly durable	99.999999999% (11 9’s) durability
+Scalable	Automatically scales with your needs
+Secure	Supports IAM, encryption, versioning
+Cost-effective	Pay only for what you use
+📦 16. S3 Basic Concepts
+Term	Description
+Bucket	Container for objects (files)
+Object	File + Metadata
+Key	Object name inside bucket
+Region	Buckets are region specific
+Versioning	Keeps multiple versions of same file
+Storage Classes	Different cost & durability levels
+🪜 17. Create S3 Bucket (Step-by-Step)
+
+Go to S3 → Create Bucket
+
+Enter unique name: my-demo-bucket-ashu
+
+Choose Region: ap-south-1
+
+Uncheck “Block all public access” (optional)
+
+Create bucket ✅
+
+Upload files manually or using CLI.
+
+💻 18. AWS CLI – S3 Commands
+Command	Description
+aws s3 ls	List all buckets
+aws s3 mb s3://my-bucket	Create bucket
+aws s3 cp file.txt s3://my-bucket/	Upload file
+aws s3 cp s3://my-bucket/file.txt .	Download file
+aws s3 rm s3://my-bucket/file.txt	Delete file
+aws s3 sync . s3://my-bucket/	Sync local → S3
+🧰 19. S3 Storage Classes
+Class	Use Case
+Standard	Frequently accessed data
+Standard-IA	Infrequently accessed
+One Zone-IA	Single AZ data
+Glacier	Archival storage (minutes to hours retrieval)
+Glacier Deep Archive	Long-term backup
+Intelligent-Tiering	Auto moves between classes
+🔐 20. S3 Security
+Feature	Description
+IAM Policies	Control who can access S3
+Bucket Policies	Public/private control
+ACLs	Legacy access controls
+Encryption	SSE-S3 / SSE-KMS / SSE-C
+Versioning	Protect from accidental delete
+MFA Delete	Prevent unauthorized deletion
+♻️ 21. S3 Versioning
+
+Keeps multiple versions of the same file.
+
+aws s3api put-bucket-versioning --bucket my-bucket --versioning-configuration Status=Enabled
+
+
+Now if you upload same file again → old version still available.
+
+📦 22. S3 Lifecycle Policies
+
+Automate storage transitions or deletions.
+
+Example:
+
+Move files from Standard → Glacier after 30 days.
+
+Delete after 1 year.
+
+🌎 23. S3 Public Access & Static Website Hosting
+🪜 Host a Static Website:
+
+Upload HTML files
+
+Enable Static Website Hosting
+
+Set permissions:
+
+{
+  "Version":"2012-10-17",
+  "Statement":[{
+    "Effect":"Allow",
+    "Principal":"*",
+    "Action":"s3:GetObject",
+    "Resource":"arn:aws:s3:::my-bucket/*"
+  }]
+}
+
+
+Access website at:
+
+http://my-bucket.s3-website.ap-south-1.amazonaws.com
+
+🧠 24. IAM + S3 Integration (Real-World Use Case)
+
+Scenario:
+
+Developer should upload files to S3 but not delete them.
+
+Create Policy:
+
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": ["s3:PutObject", "s3:ListBucket"],
+      "Resource": ["arn:aws:s3:::my-bucket", "arn:aws:s3:::my-bucket/*"]
+    }
+  ]
+}
+
+
+Attach to Developer IAM user ✅
+
+🧩 25. Interview Questions (IAM + S3)
+❓ Question	💡 Answer
+What is IAM?	Identity and Access Management for AWS.
+What is the difference between user, group, and role?	User = individual, Group = collection, Role = temporary permission.
+What is MFA?	Two-step authentication for extra security.
+What is IAM Policy?	JSON file that defines permissions.
+What is IAM Role used for?	Give EC2/Lambda temporary permissions.
+What is IAM Credential Report?	Audit report of user security.
+What is AWS CLI?	Command line interface for AWS services.
+How to handle multiple AWS accounts in CLI?	Use multiple profiles.
+What is CloudShell?	Browser-based AWS CLI.
+What is Amazon S3?	Object storage service in AWS.
+What is S3 Bucket?	Container for storing files/objects.
+What is S3 Versioning?	Keeps multiple versions of same file.
+What are S3 Storage Classes?	Standard, IA, Glacier, Deep Archive.
+What is S3 Lifecycle Policy?	Automate file transition or deletion.
+How to host a website on S3?	Enable static hosting + public bucket policy.
+How secure is S3?	11 9’s durability + IAM + Encryption.
+What is the difference between S3 and EBS?	S3 = Object storage, EBS = Block storage.
+
+✅ Summary
+
+IAM controls who can access what.
+
+S3 provides scalable, durable, and secure storage.
+
+Together, they form the backbone of AWS security and storage architecture.
