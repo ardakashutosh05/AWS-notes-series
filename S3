@@ -1,0 +1,177 @@
+⭐ 1. What is Amazon S3?
+
+Amazon S3 (Simple Storage Service) is a fully managed object storage service by AWS.
+
+👉 EC2 = compute
+👉 RDS = database
+👉 S3 = store any amount of unstructured data (objects)
+
+S3 stores files as objects inside buckets, not as files inside folders like Linux/Windows.
+
+⭐ 2. Why S3 is used?
+🔥 Key Reasons to Use S3
+Feature	Explanation
+Unlimited Storage	Store unlimited objects.
+Durability: 99.999999999% (11 9’s)	Data almost never gets lost.
+Scalability	Auto scales without configs.
+Security	IAM, Bucket Policies, ACL, MFA Delete.
+Cross-region replication	Automatic multi-region copy.
+Event Notifications	Trigger Lambda when file uploaded.
+Lifecycle Policies	Auto move to Glacier cheap storage.
+Low-cost	Only pay for what you store.
+⭐ 3. How S3 Stores Data (Object Storage Explained)
+
+Each uploaded file = Object
+
+Every object contains:
+
+Object Data
+
+Metadata (content-type, size, last-modified)
+
+Object Key (full path)
+
+Version ID
+
+Access Control info
+
+S3 = Key-Value store
+Key = File Path
+Value = File + Metadata
+
+Example:
+
+bucket/photos/2025/profile.jpg
+
+
+Key = photos/2025/profile.jpg
+
+⭐ 4. S3 Bucket – What is it?
+
+Bucket = Top-level container
+You must create bucket first → then upload objects.
+
+Bucket properties:
+
+must be unique globally
+
+choose region
+
+enable public access or keep private
+
+versioning, lifecycle rules, replication apply on bucket
+
+⭐ 5. S3 is Global but Buckets are Regional
+
+👉 S3 service is global
+👉 Bucket physically exists in 1 region
+
+Example:
+
+Bucket: myshop-data
+
+Region: ap-south-1 (Mumbai)
+→ All files stored inside Mumbai data centers
+
+⭐ 6. S3 Use Cases (Real Industry Uses)
+Use Case	Explanation
+Website hosting	Host static HTML website.
+Backup & Restore	Store snapshots, logs, backups.
+Data lake	Big data analytics, Athena, Redshift.
+Application storage	Images, docs, videos, app uploads.
+Disaster Recovery	Multi-region replication.
+Software delivery	Store installers & distribute globally.
+⭐ 7. S3 Advantages
+✔ Infinite Scaling
+✔ 11 9’s durability
+✔ Serverless (no maintenance)
+✔ Very cheap storage
+✔ Data encryption built-in
+✔ Lifecycle management → auto cost saving
+⭐ 8. S3 Disadvantages
+Disadvantage	Explanation
+Not a filesystem	You cannot install apps like on EBS.
+Eventual consistency (some features)	Not instant like database.
+High retrieval cost for Glacier	Glacier is cheap but slow.
+Cannot run OS / database	Only object storage.
+⭐ 9. How S3 Pricing Works (Very Important)
+
+S3 Cost depends on:
+
+Storage (GB per month)
+
+PUT, GET, DELETE requests
+
+Data transfer
+
+Replication
+
+Lifecycle transitions
+
+Accelerated transfer
+
+CloudFront caching reduces S3 cost
+
+FREE TIER:
+
+5 GB Standard Storage
+
+20,000 GET
+
+2,000 PUT
+
+⭐ 10. S3 Security Model (Hero Topic)
+
+S3 security depends on 4 main access methods:
+
+🔐 1. IAM Policies
+
+Give user permission → list bucket, upload, delete.
+
+🔐 2. Bucket Policies
+
+Public access for website hosting, or cross-account access.
+
+🔐 3. ACL (Legacy)
+
+Object-level permissions (rarely used now).
+
+🔐 4. Public Access Block
+
+AWS blocks public access by default.
+
+⭐ 11. S3 Data Consistency
+
+Read-after-Write consistency for new objects
+
+Strong consistency for overwrite & delete (updated by AWS in 2020)
+
+⭐ 12. S3 Reliability — 11 9’s is how?
+
+AWS stores multiple copies across multiple availability zones.
+
+Even if:
+
+1 data center burns
+
+1 AZ fails
+
+1 server crashes
+
+Your data is still safe.
+
+⭐ 13. S3 vs EBS vs EFS (Interview)
+Feature	S3	EBS	EFS
+Type	Object storage	Block storage	NFS file system
+Mount to EC2	❌ No	✔ Yes	✔ Yes (multi EC2)
+Use case	Images, backups, static files	OS disk, DB disk	Shared file storage
+Price	Cheapest	Medium	Expensive
+⭐ 14. S3 Limitations (Common Interview Q)
+
+Max object size = 5TB
+
+Max single upload = 5GB (multipart required above this)
+
+100 buckets per account (can increase)
+
+No partial update (object overwrite only)
