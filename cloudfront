@@ -1,0 +1,804 @@
+📝 Starting with Note 1: cloudfront-01-introduction.md
+🔹 What is CloudFront?
+
+CloudFront is AWS’s global Content Delivery Network (CDN). 
+Amazon Web Services, Inc.
++1
+
+It uses a worldwide network of Edge Locations (POPs), so your end-users receive content from the nearest edge, reducing latency. 
+Amazon Web Services, Inc.
++1
+
+The typical architecture:
+
+End User → CloudFront Edge Location → Origin (S3 / EC2 / ALB)  
+
+
+If content is already cached at the edge, CloudFront serves it immediately; otherwise, it fetches from the origin. 
+Amazon Web Services, Inc.
++1
+
+🔹 Why use CloudFront?
+
+Faster content delivery worldwide
+
+Lower latency and faster page load
+
+Offload origin resources (EC2/S3)
+
+Supports HTTPS, custom SSL/TLS, custom domains
+
+Integration with AWS services: S3, ALB, Lambda@Edge, WAF
+
+Edge caching helps scale traffic spikes
+
+🔹 Example: Create first distribution using EC2 instance as origin
+
+Step-by-step:
+
+Launch your EC2 instance (e.g., web server with nginx or apache) in a region. Ensure its security group allows HTTP/HTTPS from CloudFront or any.
+
+In AWS Console → CloudFront → Create Distribution
+
+Choose Web distribution (for HTTP/HTTPS content).
+
+Origin domain name: select your EC2 instance (or enter custom origin, e.g., ec2-xxx.compute.amazonaws.com).
+
+Origin protocol policy: HTTP only / HTTPS only / Match viewer.
+
+Default cache behavior: Path pattern /*, Viewer protocol policy: Redirect HTTP to HTTPS (recommended).
+
+Distribution settings: Alternate domain names (CNAME) if using custom domain, SSL certificate (via AWS Certificate Manager), Logging etc.
+
+After creation, note the Domain Name something like: d123abcd4e.cloudfront.net
+
+Point your DNS (Route 53 or other) CNAME to this domain if you use custom domain.
+
+Test: Access the CloudFront domain → you should see the content served by EC2, and subsequent requests served from nearest edge location (cache hit).
+
+Monitor: Check CloudFront metrics, cache hit/miss, X-Cache response header: “Hit from CloudFront” vs “Miss from CloudFront”.
+
+🔹 Key Concepts
+
+Distribution: A collection of edge locations + settings for content delivery.
+
+Origin: The source of content (S3 bucket, EC2 instance, ALB, custom HTTP server).
+
+Cache Behavior: Path patterns and settings (TTL, cookies, query strings) for caching.
+
+Edge Location: Global PoP where content is cached for quick access.
+
+🔹 Best Practices
+
+Use HTTPS between viewer and CloudFront, and optionally between CloudFront and origin.
+
+Use custom domain + SSL certificate for branding.
+
+Set long TTLs for static assets; invalidate when you update files.
+
+Monitor cache hit ratio; optimize origin offload.
+
+Use Origin Shield for further caching efficiency (for high traffic).
+
+Enable logging and capture X-Cache header.
+
+Use WAF to protect origins from malicious traffic.
+
+
+✅ 1. What is Cache Expiry in CloudFront?
+
+CloudFront world-wide edge location वर तुमचा data/cache store करतो.
+पण तो cached data कायम ठेवत नाही — त्याचा एक expiry time (TTL) असतो.
+
+🔸 TTL म्हणजे Time to Live
+
+CloudFront cached object किती वेळापर्यंत ठेवेल ते TTL सांगतो.
+
+TTL चे तीन type:
+TTL Type	Meaning
+Minimum TTL	CloudFront किमान इतका वेळ तरी object cache मध्ये ठेवेल
+Maximum TTL	CloudFront यापेक्षा जास्त वेळ object ठेवणार नाही
+Default TTL	Default lifetime जर origin कडून “Cache-Control header” नसला तर
+🧠 2. TTL कसे Work करतो? (Real Example)
+Scenario:
+
+तुमचे API (/api/v1/products) servers वर updated झाले.
+
+Without TTL Cache:
+CloudFront वारंवार origin (EC2/ALB) कडे request पाठवेल → latency जास्त → cost जास्त.
+
+With Proper TTL:
+CloudFront edge वर cached data देईल → fast performance → कमी लागत.
+
+📍 3. Cache Expiry कसे Set करतात?
+STEP 1: CloudFront → Behaviors → Edit
+
+तुमच्या API/Website path साठी behavior निवडा.
+
+STEP 2: TTL Values Set करा:
+
+Minimum TTL → 0 sec
+
+Default TTL → 5 sec / 60 sec / 300 sec (API वर अवलंबून)
+
+Maximum TTL → 1 hour किंवा जास्त (static files साठी)
+
+👉 API साठी TTL कमी
+👉 Static Website files (HTML, CSS, JS, Images) साठी TTL जास्त
+
+🎯 4. Custom Headers in CloudFront (MOST IMPORTANT)
+
+CloudFront तुम्ही origin (EC2/ALB/S3) कडे request पाठवताना काही headers automatically add करू शकतो.
+
+Custom Headers का Use करतात?
+
+✔ Security
+
+कोणत्याही direct EC2 API वर hit करू नये
+
+CloudFront → EC2 communication साठी एक secret header वापरतात
+
+उदा:
+
+X-Secret-Key: Abcd1234
+
+
+EC2 वर check करता:
+
+if (request.header.x-secret-key != Abcd1234) { BLOCK }
+
+
+✔ Cache Variation Control
+
+CloudFront मधून region, device, language इत्यादी headers add करता येतात
+
+Example: User-Agent header caching
+
+✔ Debugging
+
+“X-Debug-ID” add करून logs trace करता येतात
+
+🧩 5. Custom Header कसे Add करायचे?
+STEP 1: CloudFront → Origin → Edit
+STEP 2: Add Custom Header
+
+Example:
+
+Header Name	Header Value
+X-CloudFront-Token	my-secret-token-9812
+
+CloudFront आता origin कडे request पाठवताना हा header जोडेल.
+
+🛡️ Real Security Use Case (Interview Favourite)
+
+तुमचा EC2 API publicly open आहे → कोणीही call करू शकतो.
+
+🔒 तुम्ही EC2 Security Group मध्ये rule लावता:
+
+Allow only CloudFront IP ranges
+
+OR, better → Validate custom header
+
+Now तुमचा origin ONLY CloudFront मधून content serve करेल.
+
+🚀 6. Cache Expiry + Custom Header – Project Flow
+User → CloudFront
+
+(CloudFront तपासतो की cache मध्ये data आहे?)
+
+If YES → User ला cache मधून response
+
+If NO → CloudFront origin कडे request पाठवतो
+
+Custom header add करतो
+
+Origin response देतो
+
+CloudFront त्याला cache करतो (TTL नुसार)
+
+📝 7. Example Architecture Diagram (Textual)
+User
+   ↓
+CloudFront (Edge Location)
+   ↓  (Custom Header: X-Secret: 1234)
+Origin (EC2 / ALB / S3)
+
+💬 8. Real Example: Cache-Control Header
+
+तुम्ही API मध्ये लिहिलं:
+
+Cache-Control: max-age=60
+
+
+CloudFront automatically TTL = 60 sec सेट करेल.
+
+जर header नाही → CloudFront Default TTL वापरेल.
+
+⚡ 9. Cache Expiry Problems (and Solutions)
+❌ Problem 1: Cached data old दिसत आहे
+
+✔ Solution: Lower TTL / Invalidation
+
+❌ Problem 2: Private API Cached होत आहे
+
+✔ Solution:
+
+Disable Cache
+
+Forward "All Headers"
+
+❌ Problem 3: Multiple devices, same cache
+
+✔ Solution:
+
+Forward “User-Agent” header
+
+Different cache for mobile & laptop
+
+🎯 10. Summary (Very Important for Interviews)
+Feature	Use
+Cache Expiry / TTL	किती वेळ object cache मध्ये ठेवायचा
+Minimum TTL	Minimum hold time
+Default TTL	Default cache time
+Maximum TTL	Max limit
+Custom Headers	Security, debugging, cache variation
+Use-Case	CloudFront → Origin communication more secure
+
+🧩 1. What is a Cache Key in CloudFront?
+
+CloudFront जेव्हा cache create करतो, तेव्हा तो कोणत्या basis वर cache बनवायचा हे “Cache Key” ठरवतो.
+
+Cache Key म्हणजे:
+
+कुठल्या variables / headers / cookies / query params वरून CloudFront वेगवेगळे cache versions तयार करेल.
+
+If Cache Key changes → CloudFront नवीन cache तयार करेल
+If Cache Key same राहिला → CloudFront existing cache वापरेल
+
+🎯 2. Cache Key मध्ये कोणते elements वापरू शकतो?
+
+CloudFront खालील गोष्टींच्या आधारावर cache key तयार करू शकतो:
+
+Element	Explanation
+URL Path	/products, /images/logo.png
+Query Parameters	?id=10, ?search=shirt
+Headers	User-Agent, Language, Authorization
+Cookies	session-id, theme
+
+👉 Most important = Query Params
+(95% real-world CloudFront काम query params वर असते)
+
+🎯 3. Query Parameters का Important आहेत?
+
+काही APIs URL parameters वर आधारित वेगवेगळे response देतात:
+
+Example:
+
+/product?id=101
+/product?id=200
+
+
+दोन्ही response वेगळे.
+
+If CloudFront Query Params cache key मध्ये घेत नाही →
+🔴 दोन्ही request ला SAME response मिळू शकतो
+🔴 Data mismatch होईल
+🔴 API चुकीचा output देईल
+
+🔥 Real Example (Very Important)
+URL:
+https://site.com/api/products?id=10
+
+
+जर CloudFront query params ignore केले →
+CloudFront /api/products चा समान cache वापरेल
+
+👎 id=10 साठी आलेला data
+👎 id=20 साठी पण देईल
+
+This is a BIG production issue.
+
+⭐ 4. Cache Key → Query String Behavior
+
+CloudFront मध्ये दोन settings असतात:
+
+Option 1: Forward All Query Strings
+
+CloudFront सर्व query parameters origin कडे forward करतो.
+
+👉 API servers साठी BEST
+👉 प्रत्येक unique query parameter combination साठी वेगळा cache तयार होतो
+
+Example:
+
+?id=1
+?id=2
+?category=mobile
+
+
+प्रत्येकासाठी वेगळा cache.
+
+Option 2: Forward Only Selected Query Strings
+
+एकाच वेळेस सर्व parameters आवश्यक नसतात.
+
+Example:
+
+/search?category=shirt&color=black&sort=price
+
+
+तुमच्या backend ला फक्त व्हावा data:
+
+✔ category
+✔ color
+
+❌ sort (no need to cache on sorting)
+
+CloudFront मध्ये तुम्ही choose करू शकता:
+Forward only → category, color
+
+Option 3: Don’t Forward Query Strings
+
+This is default.
+
+Static website साठी best:
+
+HTML pages
+
+CSS/JS files
+
+Images
+
+यांना query params ची गरज नसते.
+
+📌 5. Cache Key Rules (VERY IMPORTANT)
+
+CloudFront caching depends on:
+
+Cache Key = Path + Query Params + Headers + Cookies
+
+
+If Query Params same → Same cached object
+
+If Query Params different → New cache
+
+🧪 Example Scenarios
+1️⃣ Static Website
+GET /index.html?ver=2
+
+
+You don’t need version query caching →
+Cache key = only /index.html
+
+2️⃣ Image URL with size parameter
+image.jpg?size=small
+image.jpg?size=large
+
+
+You need different cache →
+Cache key must include: size
+
+3️⃣ E-commerce Filters
+/products?category=mens&color=red
+
+
+CloudFront selects:
+
+category
+
+color
+
+Sort, page, limit → ignore
+
+🛠️ 6. How to Configure Cache Key (Step-by-Step)
+Step 1 → CloudFront Console
+
+→ Distribution
+→ Behaviors
+→ Edit Behavior
+
+Step 2 → Cache Key & Origin Requests
+
+Choose:
+✔ Forward all Query Strings
+OR
+✔ Forward selected
+OR
+✔ None
+
+Step 3 → Save & Invalidate old cache
+🔐 7. Query Params + Cache Key + Security
+
+JWT tokens किंवा sensitive data query params मध्ये नसावा:
+
+?token=abcd123
+
+
+If tokens in URL → CloudFront cache मध्ये जाईल → Big security risk.
+
+Avoid storing auth tokens in cache key
+OR
+disable caching for auth endpoints
+
+📦 8. Cache Key Use-Cases (Interview Answers)
+Use-Case	Cache Key Requirement
+Static Website	No query params, no headers
+API	All or selected query params
+Resized images	size param required
+Language based site	Accept-Language header
+Device-based content	User-Agent header
+🧠 9. Performance Impact
+If you forward too many query params →
+
+❌ Too many cache versions
+❌ Cache fragmentation
+✔ Higher cost
+
+If you forward too few →
+
+❌ Wrong data
+❌ API corruption
+
+👉 Balance is key.
+
+🧾 10. Exam / Interview Perfect Summary
+
+Cache Key म्हणजे CloudFront कसं ठरवतं की request identical आहे की वेगळी.
+ते depend करतो:
+
+Path
+
+Query Params
+
+Cookies
+
+Headers
+
+Query Params फार महत्त्वाचे:
+✔ Dynamic content
+✔ Search
+✔ Product pages
+✔ Sorting / filtering
+✔ Paginated data
+
+CloudFront मध्ये तीन modes:
+
+All Query Params
+
+Selected Query Params
+
+No Query Params
+
+🚀 AWS CloudFront – Complete Guide (FULL Deep Notes – All Topics at Once)
+
+(Everything covered: Basics → Distributions → Origins → Behaviors → Cache → Security → Geo Control → Error Pages → Projects)
+
+📌 Table of Contents
+
+What is CloudFront?
+
+Create First Distribution with EC2
+
+CloudFront Invalidation
+
+Restrict Access to EC2 / ALB using CloudFront Only
+
+CloudFront with S3 (Private Bucket)
+
+Multiple Origins + Path-Based Routing
+
+Custom Error Pages
+
+Restrict Content Based on Country (Geo Restriction)
+
+Disable / Delete CloudFront Distribution
+
+Full CloudFront Project – Part 1
+
+CloudFront Project – Part 2
+
+CloudFront Project – Part 3 (Cache Keys, Headers, Query Params)
+
+--------------------------------------------------------------------------
+🟦 1. What is CloudFront? (Deep Explanation)
+
+CloudFront म्हणजे AWS ची Global Content Delivery Network (CDN) सेवा.
+
+CloudFront का वापरतात?
+
+✔ Website fast load करायला
+✔ Latency कमी करायला
+✔ EC2/S3 वर load कमी करायला
+✔ Security वाढवायला
+✔ Caching ने cost बचत करायला
+✔ Global customers साठी high speed content delivery
+
+CloudFront कसे काम करते?
+
+User → nearest Edge Location ला request करतो
+
+CloudFront त्या location मध्ये cache check करतो
+
+Cache HIT → त्वरित data return
+
+Cache MISS → origin (S3/EC2/ALB) कडून data fetch
+
+Data user ला deliver करून Edge Location मध्ये store करतो
+
+--------------------------------------------------------------------------
+🟩 2. Create First CloudFront Distribution with EC2
+Steps:
+
+EC2 instance launch करा
+
+Apache/Nginx install करून website run करा
+
+CloudFront → Create Distribution
+
+Origin type = Custom
+
+Domain = EC2 public DNS
+
+Viewer protocol → Redirect HTTP to HTTPS
+
+Cache policy → CachingOptimized
+
+Distribution create करा
+
+CloudFront domain मिळेल →
+
+d123abcd.cloudfront.net
+
+
+Browser मध्ये open करा
+
+--------------------------------------------------------------------------
+🟥 3. CloudFront Invalidation (Remove Old Cache)
+
+Website update केल्यावर CloudFront जुना data serve करतो.
+
+तो clear करण्यास Invalidation वापरतो.
+
+Examples:
+
+Invalidate entire distribution:
+
+/*
+
+
+Invalidate only one file:
+
+/index.html
+/style.css
+
+
+Cost:
+
+पहिले 1000 invalidations free
+
+नंतर charge लागतो
+
+--------------------------------------------------------------------------
+🟧 4. Restrict Access to EC2 / ALB using CloudFront Only
+
+हा security feature खूप important आहे.
+
+Goal:
+
+User → CloudFront → EC2
+Direct access to EC2 block
+
+Method:
+
+EC2 security group → inbound Allow ONLY CloudFront IP ranges
+
+AWS publishes CloudFront IP ranges list in JSON
+
+Add to security group
+
+Result:
+✔ No direct EC2 access
+✔ Only CloudFront route allowed
+✔ Secure architecture
+
+--------------------------------------------------------------------------
+🟨 5. CloudFront with S3 Private Bucket
+
+Private S3 bucket → direct public accessible नाही
+CloudFront वापरून access देता येतो.
+
+Steps:
+
+S3 bucket → Block all public access
+
+CloudFront → Create distribution
+
+Origin = S3 bucket
+
+Check → Origin Access Control (OAC)
+
+Apply OAC policy to bucket
+
+Now CloudFront content public but S3 private
+
+Result:
+✔ Secure
+✔ Scalable
+✔ Fast
+
+--------------------------------------------------------------------------
+🟫 6. Path-Based Routing (Multiple Origins + Behaviors)
+
+CloudFront distribution मध्ये multiple origins देऊ शकतो.
+
+Example:
+
+/api/* → API Gateway
+
+/images/* → S3
+
+/app/* → EC2
+
+How?
+
+CloudFront → Origins → Add multiple origins
+
+Behaviors → Path Pattern सेट करा
+
+Priority सेट करा
+
+This gives:
+✔ Microservices architecture
+✔ Hybrid origin setup
+✔ Optimized caching
+
+--------------------------------------------------------------------------
+🟩 7. CloudFront Custom Error Pages
+
+By default, CloudFront ugly error pages देतो:
+
+403
+
+404
+
+500
+
+You can show custom error page:
+
+Example:
+
+404 → redirect to /error/404.html
+
+Steps:
+
+S3/EC2 मध्ये custom 404.html बनवा
+
+CloudFront → Error Pages
+
+Response Page Path → /errors/404.html
+
+HTTP Response Code → 200 or 404
+
+--------------------------------------------------------------------------
+🟦 8. Restrict Content Based on Country (Geo Restriction)
+
+CloudFront Geo Blocking allows:
+
+✔ Allow only selected countries
+✔ Block certain countries
+
+Example:
+
+Allow: India
+
+Block: China, Pakistan, Russia
+
+Steps:
+CloudFront → Restrict Viewer Access (Geo) → Add countries
+
+Use-Cases:
+
+Licensing issues
+
+Country-specific content
+
+Security restrictions
+
+--------------------------------------------------------------------------
+🟧 9. Disable / Delete CloudFront Distribution
+
+CloudFront delete करण्यापूर्वी disable करावा लागतो.
+
+Steps:
+
+CloudFront → Distribution
+
+Disable
+
+Wait for deployment
+
+Delete
+
+Reason:
+CloudFront globally distributed असतो.
+Delete करण्यासाठी तो "inactive" पाहिजे.
+
+--------------------------------------------------------------------------
+🟩 10. CloudFront Project – Part 1 (API Server Setup)
+
+Project Overview:
+
+EC2 → Node.js API / Flask API
+
+CloudFront → Cache responses
+
+Custom Headers → X-Cache → HIT/MISS चेक
+
+S3 → Static website
+
+Part 1:
+
+EC2 launch
+
+Node.js API deploy
+
+/products, /users APIs बनवा
+
+Test API from EC2 public IP
+
+CloudFront origin म्हणून EC2 add करा
+
+--------------------------------------------------------------------------
+🟨 11. CloudFront Project – Part 2 (Cache Expiry + Custom Headers)
+
+This part teaches:
+
+✔ Cache-Control headers
+✔ Expires header
+✔ Max-age
+✔ No-store
+✔ Custom response headers
+
+Example:
+Cache-Control: max-age=3600
+
+Custom header:
+X-Version: 1.0
+
+
+CloudFront → Behavior → Add custom header
+
+--------------------------------------------------------------------------
+🟥 12. CloudFront Project – Part 3 (Cache Key + Query Params + Headers)
+
+You already saw this but here summary:
+
+Cache Key contains:
+
+Path
+
+Query Params
+
+Cookies
+
+Headers
+
+CloudFront तीन modes:
+
+1️⃣ All Query Params Forward
+2️⃣ Only Selected Query Params Forward
+3️⃣ None Forward
+
+Why important?
+
+Search pages, filters, product details API → use query params
+Image resize URL → needs query params
+
+Example:
+
+/product?id=5
+/product?id=9
+
+
+Both must be different cache versions.
+
