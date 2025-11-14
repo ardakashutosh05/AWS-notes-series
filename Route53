@@ -1,0 +1,323 @@
+✅ AWS Route53 – FULL DEEP NOTES (All Topics in One Shot)
+
+The Most Complete “AWS Route53 Notes” for GitHub
+
+1. Route53 Overview – AWS Fully Managed DNS Service
+⭐ Route53 म्हणजे काय?
+
+Route53 हे Managed DNS (Domain Name System) आहे जे domain चे नाव सहज IP address मध्ये convert करते.
+
+⭐ Route53 का वापरतात?
+
+Domain register करण्यासाठी
+
+Website hosting साठी DNS व्यवस्थापन
+
+Traffic intelligent routing
+
+Health checks
+
+Multi-region failover
+
+Hybrid networking (private hosted zone)
+
+⭐ Route53 चे मुख्य components:
+Component	Description
+Hosted Zone	Domain साठी DNS records ची container
+Record Types	A, AAAA, CNAME, TXT, Alias, MX, NS
+Routing Policies	Traffic कसा route होईल
+Health Checks	Endpoint online आहे का ते तपासणे
+Traffic Flow	Advanced global routing
+DNS Firewall	Block/Allow DNS queries
+Private Hosted Zone	VPC internal-only DNS
+2. Register Your First Domain in Route53
+Steps:
+
+AWS Console → Route53
+
+“Register Domain”
+
+Domain name type करा
+
+Availability check
+
+Contact details भरा
+
+Payment → Domain ready in 10–20 minutes
+
+Hosted zone auto-created
+
+उदाहरण:
+
+mycloudproject.live
+Hosted Zone: mycloudproject.live → NS, SOA auto-created.
+
+3. A Record & AAAA Record in Action
+A Record
+
+• Domain → IPv4 address
+Example:
+www.example.com → 54.221.10.24
+
+AAAA Record
+
+• Domain → IPv6 address
+
+कधी काय वापरावे?
+
+A → IPv4
+
+AAAA → IPv6-enabled apps
+
+4. CNAME Record in Action
+CNAME म्हणजे Alias Name
+
+One domain pointing to another domain.
+
+Example:
+
+api.mycloud.live → backend.example.com
+
+लक्षात ठेव:
+
+❌ CNAME root domain ला देऊ शकत नाही
+✔ Use Alias instead
+
+5. Alias Record vs CNAME
+Alias → AWS resources साठी
+
+Support targets:
+
+ELB
+
+CloudFront
+
+API Gateway
+
+S3 Websites
+
+VPC Endpoints
+
+CNAME → फक्त domain-to-domain
+Feature	Alias	CNAME
+Root domain allowed	✔	❌
+Free	✔	❌
+AWS resource support	✔	❌
+6. TXT Record
+
+Use cases:
+
+Domain verification
+
+Email SPF records
+
+Security authentication
+
+Example:
+
+google-site-verification=xxxxx
+
+7. Health Check in Route53
+Health Check Checks:
+
+✔ HTTP / HTTPS endpoint
+✔ TCP port
+✔ Latency
+✔ Failure threshold
+
+Uses:
+
+Automated failover
+
+Parent health checks
+
+Multi-region active-passive setups
+
+8. Parent Health Check in Route53
+
+Parent Health Check = Multiple individual checks under one logic.
+
+Example:
+
+Health Check 1 → us-east-1 API
+
+Health Check 2 → us-west-2 API
+
+Parent → Mark Healthy if at least 1 is healthy
+
+9. Routing Policies (ALL Types)
+1️⃣ Weighted Routing Policy
+
+Traffic percentage वर divide करा.
+
+Example:
+
+app1 → 70%
+
+app2 → 30%
+
+Used for:
+✔ Gradual migration
+✔ A/B testing
+
+2️⃣ Geolocation Routing Policy
+
+User च्या location वरून traffic route करणे.
+
+Examples:
+
+India → Mumbai server
+
+US → N. Virginia server
+
+3️⃣ Latency Based Routing
+
+कमी latency असलेल्या region मध्ये user ला route करणे.
+
+Best for:
+✔ Global applications
+✔ Performance sensitive apps
+
+4️⃣ Failover Routing
+
+Active-Passive setup
+
+Example:
+
+Primary → us-east-1
+
+Secondary → us-west-2
+
+Primary down? Route to Secondary
+
+5️⃣ Multivalue Answer Routing
+
+Route53 returns multiple healthy records
+Used for simple load balancing (not ELB)
+
+6️⃣ IP-Based Routing Policy
+
+User च्या IP range वरून routing decision.
+
+Example:
+
+ISP A → Server A
+
+ISP B → Server B
+
+10. Route53 Cleanup
+
+Delete hosted zone
+
+Delete records
+
+Delete health checks
+
+Delete traffic flow policies
+
+Delete domains (optional)
+
+11. Traffic Policy (Advanced Routing)
+
+Traffic Flow GUI allows:
+
+Geolocation + Latency mixing
+
+Health checks + Failover combination
+
+Versioning of routing policies
+
+Output → JSON policy
+
+12. Route53 Logging
+
+CloudWatch log for DNS queries:
+
+Query origin
+
+Domain queried
+
+Response time
+
+Useful for:
+✔ Debugging
+✔ Security
+✔ Cost optimization
+
+13. Route53 DNS Firewall
+
+Protect DNS-level threats:
+
+Block malicious domains
+
+Allow corporate whitelist
+
+Enforce security rules
+
+Firewall rule groups attach to VPC.
+
+14. Route53 Private Hosted Zone (PHZ)
+Used For:
+
+Internal VPC-only domain
+
+No public internet exposure
+
+Example:
+
+db.internal.local
+backend.internal.local
+
+Works with:
+
+✔ VPC
+✔ Hybrid cloud (via VPN / Direct Connect)
+
+🎯 Interview Questions and Answers (Route53)
+Q1. Route53 म्हणजे काय?
+
+Route53 is AWS’s highly available and scalable managed DNS service.
+
+Q2. A Record आणि CNAME मध्ये फरक काय?
+
+A → Points to IPv4
+
+CNAME → Points to another domain
+
+Q3. Alias Record कधी वापरावे?
+
+AWS resources ला domain attach करायचा असताना.
+
+Q4. Failover Routing म्हणजे काय?
+
+Active-Passive setup, health check failure वर automatic switching.
+
+Q5. Geolocation vs Latency routing?
+
+Geolocation → User’s country
+
+Latency → Lowest network latency
+
+Q6. Private Hosted Zone म्हणजे काय?
+
+Only VPC internal DNS resolution, not public.
+
+Q7. Health check कसे काम करते?
+
+It periodically monitors endpoints and marks them healthy/unhealthy.
+
+Q8. Route53 DNS Firewall का वापरतात?
+
+Malicious domain protection + traffic filtering.
+
+Q9. Weighted routing कधी वापरतात?
+
+A/B testing किंवा gradual migration.
+
+Q10. Multivalue Answer Routing चे use?
+
+Simple load balancing without ELB.
+
+DONE ✔
+
+हे Route53 चे complete notes (full-depth) झाले — GitHub repository-ready
