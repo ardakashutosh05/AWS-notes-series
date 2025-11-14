@@ -1,0 +1,695 @@
+🧭 AWS VPC — Complete Deep Dive (All topics)
+Table of Contents (आपण सर्व एकाच वेळेत कव्हर करतो)
+
+What is VPC (quick)
+
+Create First VPC (step-by-step - Console & CLI)
+
+Create First Subnet
+
+Custom VPC & Subnet without IGW/Route Table (isolated VPC)
+
+Internet Gateway (IGW) & Route Table — how they work + setup
+
+Public vs Private Subnet (design patterns)
+
+Access Private Instance using Bastion Host (jump box) — step-by-step
+
+Private Instance Internet Access — NAT Instance (how-to, pros/cons)
+
+Private Instance Internet Access — NAT Gateway (how-to, pros/cons)
+
+NACL (Network ACL) — what, how, NACL vs Security Group
+
+Create NACL (step-by-step)
+
+VPC Cleanup (best practices + steps)
+
+VPC Peering — concepts, limitations, setup, use-cases
+
+Transit Gateway — intro, attachments, use-cases, step-by-step
+
+Transit Gateway Part-2 (advanced considerations)
+
+Delete Transit Gateway & clean up
+
+VPC Flow Logs — what, how, analyze, costs
+
+VPC Endpoints — Gateway Endpoint (S3/DynamoDB) — how to use
+
+Interface Endpoint (AWS PrivateLink) — how to use
+
+Site-to-Site VPN & Virtual Private Gateway — concept & walkthrough
+
+Egress-Only Internet Gateway (for IPv6) — explanation + usage
+
+Consolidated Interview Q&A (important questions + short answers)
+
+1) What is a VPC — short definition
+
+VPC (Virtual Private Cloud) = logically isolated virtual network in AWS where you launch AWS resources (EC2, RDS, EKS, etc.).
+
+You control IP address range (CIDR), subnets, route tables, network gateways, ACLs, security groups, endpoints.
+
+Analogy: VPC = your private datacenter network in AWS.
+
+2) Create First VPC — step-by-step
+Console steps (quick)
+
+AWS Console → VPC → Your VPCs → Create VPC.
+
+Name tag: my-first-vpc
+
+IPv4 CIDR block: e.g. 10.0.0.0/16 (gives 65k addresses)
+
+IPv6: optional (assign Amazon-provided IPv6 CIDR)
+
+Tenancy: default (shared) or dedicated (rare).
+
+Create subnets (next step) and IGW if you want internet.
+
+AWS CLI (create VPC)
+# create vpc
+aws ec2 create-vpc --cidr-block 10.0.0.0/16 --tag-specifications 'ResourceType=vpc,Tags=[{Key=Name,Value=my-first-vpc}]'
+
+# note the VpcId from output (e.g., vpc-0abc...)
+
+3) Create First Subnet
+Concepts
+
+Subnet = subdivision of VPC CIDR in a specific AZ (AZ-scoped).
+
+Use multiple AZs for HA.
+
+Example design (small lab)
+
+VPC 10.0.0.0/16
+
+Public subnet AZ-a: 10.0.1.0/24
+
+Private subnet AZ-a: 10.0.2.0/24
+
+Public subnet AZ-b: 10.0.3.0/24
+
+Private subnet AZ-b: 10.0.4.0/24
+
+Console steps
+
+VPC → Subnets → Create subnet → choose VPC, AZ, CIDR, name.
+
+CLI example
+aws ec2 create-subnet --vpc-id vpc-0abc123 --cidr-block 10.0.1.0/24 --availability-zone ap-south-1a --tag-specifications 'ResourceType=subnet,Tags=[{Key=Name,Value=public-a}]'
+
+4) Custom VPC & Subnet without IGW and Route Table (isolated/air-gapped)
+
+Create a VPC and subnets but do not attach an Internet Gateway — instances will be private & no internet.
+
+Useful for sensitive workloads or on-prem connectivity only (VPN/Direct Connect).
+
+Make route table local-only (default route local exists automatically). Don’t add 0.0.0.0/0 route.
+
+Steps
+
+Create VPC & subnets.
+
+Do not create IGW.
+
+Launch EC2 in subnet — it will have private IP only; no internet unless NAT/VPN present.
+
+5) Internet Gateway (IGW) & Route Table — how they work + setup
+What is IGW?
+
+IGW = horizontally scaled, redundant Amazon-managed gateway that allows communication between instances in your VPC and the internet.
+
+IGW is region-wide and must be attached to VPC.
+
+Route Table basics
+
+A route table holds routes (destination CIDR → target).
+
+Default local route 10.0.0.0/16 → local exists automatically.
+
+To make a subnet public: route 0.0.0.0/0 → igw-id in the subnet’s associated route table.
+
+Steps: Make subnet public
+
+Create IGW: Console VPC → Internet Gateways → Create → Attach to VPC.
+
+Route table → select route table associated with public subnet (or create new RT) → Edit routes → Add route: Destination 0.0.0.0/0 Target igw-xxxxx.
+
+Launch EC2 in that subnet and assign a public IP (auto-assign or Elastic IP). Ensure Security Group allows inbound SSH/HTTP as required.
+
+CLI (create IGW + route)
+aws ec2 create-internet-gateway
+aws ec2 attach-internet-gateway --vpc-id vpc-0abc123 --internet-gateway-id igw-0abc
+aws ec2 create-route --route-table-id rtb-0abc --destination-cidr-block 0.0.0.0/0 --gateway-id igw-0abc
+
+6) Public vs Private Subnet — design patterns
+Definitions
+
+Public subnet: subnet with a route to IGW and instances have public IPs or Elastic IPs → reachable from internet (subject to SG rules).
+
+Private subnet: no direct route to IGW. Instances have only private IPs. Internet access via NAT (if required).
+
+Typical 3-tier VPC pattern
+
+Public subnets: load balancers, bastion host, NAT gateway.
+
+Private subnets: application servers, databases.
+
+DB subnet group: private subnets across AZs (for RDS Multi-AZ).
+
+Example CIDR plan
+
+10.0.0.0/16
+
+Public-A 10.0.1.0/24
+
+Private-A 10.0.2.0/24
+
+Public-B 10.0.3.0/24
+
+Private-B 10.0.4.0/24
+
+7) Access Private Instance using Bastion Host (jump box)
+When to use
+
+You need SSH/RDP into private instances without public IP.
+
+Design
+
+Place bastion in public subnet, harden it (SG limited to your IP), use it to SSH to private instance.
+
+Steps (Console)
+
+Launch EC2 in public subnet (bastion) with public IP. Harden: SG allows SSH only from your office/IP.
+
+Launch target EC2 in private subnet (no public IP).
+
+SSH: ssh -i bastion.pem ec2-user@<bastion-public-ip> then from bastion ssh -i private_key.pem ec2-user@10.0.2.10 (private IP).
+
+Optionally enable SSH agent forwarding or set ProxyCommand in ~/.ssh/config:
+
+Host bastion
+  Hostname bastion-public-ip
+  User ec2-user
+  IdentityFile ~/.ssh/bastion.pem
+
+Host private*
+  User ec2-user
+  IdentityFile ~/.ssh/private.pem
+  ProxyCommand ssh -W %h:%p bastion
+
+More secure: Session Manager (SSM)
+
+Use AWS Systems Manager Session Manager to avoid bastion entirely (attach IAM role & SSM agent) — recommended.
+
+8) Private Instance Internet Access — NAT Instance
+What is NAT instance?
+
+A user-managed EC2 instance that performs NAT for private subnets (source NAT). Older pattern before NAT Gateway.
+
+How to set up (high-level)
+
+Launch a dedicated EC2 (Amazon Linux) in public subnet. Enable Source/Dest check = disabled.
+
+Add route in private subnet route table: 0.0.0.0/0 → nat-instance-private-ip.
+
+Security groups: NAT instance allows outbound; private instances route via NAT.
+
+Commands (disable source/dest check)
+aws ec2 modify-instance-attribute --instance-id i-012345 --no-source-dest-check
+
+Pros
+
+Cheap for very low traffic, customizable.
+
+Cons
+
+Single point of failure unless you build HA (auto-failover scripts), management overhead, scaling, maintenance.
+
+9) Private Instance Internet Access — NAT Gateway (recommended)
+What is NAT Gateway?
+
+AWS-managed, highly available NAT service per AZ; scales automatically.
+
+Setup steps
+
+Create NAT Gateway in public subnet (requires Elastic IP).
+
+Update route table for private subnets: 0.0.0.0/0 → nat-gateway-id.
+
+Private instances send internet-bound traffic to NAT gateway (SNAT) and get internet access.
+
+CLI
+aws ec2 create-nat-gateway --subnet-id subnet-0abc --allocation-id eipalloc-01234
+
+Pros
+
+Managed, highly available, scales well (per AZ), easier than NAT instance.
+
+Cons
+
+Cost: hourly + data processing charges. For high egress, costs add up.
+
+Best practice
+
+Deploy one NAT gateway per AZ and associate private subnets in that AZ to avoid cross-AZ charges.
+
+10) NACL — Network ACL (stateless firewall), NACL vs Security Group
+What is NACL?
+
+Subnet-level network access control list that allows/denies inbound/outbound traffic. Stateless (must configure both directions). Evaluated by rule number order (lowest first) and supports allow & deny.
+
+Security Group (SG)
+
+Instance-level, stateful (reply allowed automatically), allows only allow rules, applies to instance ENI.
+
+Differences
+Feature	Security Group	NACL
+Level	Instance	Subnet
+Stateful?	Yes	No
+Rules	Allow only	Allow & Deny
+Evaluated	All SGs applied	Rule number order
+Use-case	Primary protection	Extra layer, blacklist/whitelist, compliance
+When to use NACL?
+
+Additional subnet-level filtering, e.g., block a suspicious IP across subnet regardless of SG. But SG is usually sufficient.
+
+11) Create NACL — step-by-step
+Console
+
+VPC → Network ACLs → Create network ACL → Choose VPC.
+
+Edit inbound/outbound rules (rule number, protocol, port range, allow/deny, source/destination).
+
+Associate NACL to subnet (can associate to multiple; each subnet only one NACL).
+
+Example: Allow HTTP/HTTPS and SSH from specific IP
+
+Inbound rule 100: Allow TCP 80 0.0.0.0/0
+
+Inbound rule 110: Allow TCP 443 0.0.0.0/0
+
+Inbound rule 120: Allow TCP 22 <your-ip>/32
+
+Outbound rule 100: Allow all traffic 0.0.0.0/0
+Remember to add reverse outbound allow rules if necessary (because stateless).
+
+12) VPC Cleanup — best practices & steps
+Why cleanup?
+
+Avoid unexpected costs (NAT gateways, EIPs), remove stale resources, security.
+
+Checklist to clean VPC
+
+Terminate EC2 instances.
+
+Delete ENIs (Elastic Network Interfaces) if stuck.
+
+Release Elastic IP addresses (EIP).
+
+Delete NAT Gateways (and associated EIPs).
+
+Delete Route Tables (custom), detach IGW then delete IGW.
+
+Delete Subnets.
+
+Delete Security Groups (can't delete default SG) — remove dependencies.
+
+Delete NACLs (if custom).
+
+Delete VPC.
+
+CLI example (detach and delete IGW)
+aws ec2 detach-internet-gateway --internet-gateway-id igw-0123 --vpc-id vpc-0123
+aws ec2 delete-internet-gateway --internet-gateway-id igw-0123
+
+
+Be careful with dependencies — deletion order matters.
+
+13) VPC Peering — concepts, limitations, setup
+What is VPC Peering?
+
+Private network connection between two VPCs (same or different accounts/regions with Inter-Region Peering support) allowing routing via private IPs.
+
+Key points
+
+Peering is non-transitive (A↔B and B↔C does not imply A↔C).
+
+Works cross-account.
+
+No single-hop routing through a third VPC.
+
+No overlapping CIDRs allowed (must be unique).
+
+You update route tables to route traffic to peer vpc via peering connection.
+
+Use-cases
+
+App in one VPC talking to DB in another account VPC.
+
+Shared services VPC (logging, authentication).
+
+Setup (Console)
+
+VPC A → Peering Connections → Create Peering Connection → Choose remote VPC (same account or other account).
+
+Accept in the remote account (if cross-account).
+
+Update route tables: In VPC A route table: peerCIDR → pcx-xxxxx; In VPC B route: peerCIDR → pcx-xxxxx.
+
+Update Security Groups to allow traffic from peer range.
+
+CLI example
+aws ec2 create-vpc-peering-connection --vpc-id vpc-aaa --peer-vpc-id vpc-bbb --peer-owner-id 123456789012
+aws ec2 accept-vpc-peering-connection --vpc-peering-connection-id pcx-012345
+
+14) Transit Gateway (TGW) — intro, attachments, use-cases
+What is Transit Gateway?
+
+Central hub to connect many VPCs, on-prem networks (via VGW), and VPNs. Replaces mesh of peering with hub-and-spoke.
+
+Benefits
+
+Scales to thousands of VPCs across accounts/regions (with TGW Inter-Region).
+
+Supports route propagation, attachments, central routing policies.
+
+Attachments
+
+VPC Attachment: attach a VPC to TGW (specify subnet in each AZ to create ENIs).
+
+VPN Attachment: connect customer gateway to TGW.
+
+Direct Connect Gateway attachment possible.
+
+High-level steps
+
+Create Transit Gateway (Console → Transit Gateway → Create).
+
+Create attachment: VPC → Actions → Create Transit Gateway Attachment.
+
+Accept attachment on TGW side if needed.
+
+Route: update TGW route table and VPC route table to send traffic to TGW via attachment.
+
+CLI example
+aws ec2 create-transit-gateway --description "MyTGW"
+aws ec2 create-transit-gateway-vpc-attachment --transit-gateway-id tgw-0abc --vpc-id vpc-0123 --subnet-ids subnet-1 subnet-2
+
+Use-case patterns
+
+Multi-account networking at scale.
+
+Centralized security & inspection (via inspection VPC).
+
+On-prem connectivity consolidation.
+
+15) Transit Gateway — Part 2 (advanced)
+Considerations
+
+Route table per TGW — you can create multiple TGW route tables (segmentation).
+
+Propagation: attachments can propagate routes automatically.
+
+Security: use Security Groups & NACLs in VPCs; TGW itself is not a firewall.
+
+Inter-region TGW peering for global connectivity (separate charges).
+
+Cost: TGW hourly + data processing per GB.
+
+Design tip
+
+Use one TGW with route tables per environment (prod/dev), attach only required VPCs to route table.
+
+Use Transit VPC for inspection: forward traffic to inspection EC2s (security appliances) via TGW route table.
+
+16) Delete Transit Gateway & clean up
+Steps
+
+Detach all attachments (VPC attachments, VPN, DX).
+
+Delete TGW attachments.
+
+Delete Transit Gateway.
+
+Remove route table entries & dependencies.
+
+CLI detach example:
+
+aws ec2 delete-transit-gateway-vpc-attachment --transit-gateway-attachment-id tgw-attach-0abc
+aws ec2 delete-transit-gateway --transit-gateway-id tgw-01234
+
+
+Be careful: attachments must be cleared and acceptance statuses resolved.
+
+17) VPC Flow Logs — what, how, analyze, costs
+What are Flow Logs?
+
+Capture IP traffic metadata (accept/reject, src/dst, ports, protocol) for ENIs, subnets or VPCs. Data sent to CloudWatch Logs or S3.
+
+Use-cases
+
+Security troubleshooting, forensic analysis, traffic accounting, audit.
+
+Create (Console)
+
+VPC → Your VPC → Create flow log → Choose resource (VPC/subnet/ENI), destination (CloudWatch Logs or S3), filter (All / Accept / Reject), IAM role.
+
+Example (CLI)
+aws ec2 create-flow-logs --resource-ids vpc-0123 --resource-type VPC --traffic-type ALL --log-group-name vpc-flowlogs --deliver-logs-permission-arn arn:aws:iam::123456:role/flow-logs-role
+
+Log fields (version 2)
+
+version, account-id, interface-id, srcaddr, dstaddr, srcport, dstport, protocol, packets, bytes, start, end, action, log-status
+
+Analysis
+
+Use Athena (if logs in S3) to query.
+
+Use CloudWatch Insights (if in CloudWatch).
+
+Export to SIEM (Splunk) for correlation.
+
+Cost
+
+CloudWatch ingestion costs and S3 storage costs. Keep sampling/filters to control cost.
+
+18) VPC Endpoints — Gateway Endpoint (S3 & DynamoDB)
+What is Gateway Endpoint?
+
+A routeTable-target endpoint for S3 or DynamoDB enabling VPC resources to privately access S3/DDB without internet/IGW/NAT.
+
+Benefits
+
+No internet egress, improved security, better performance for S3 traffic.
+
+Setup (Console)
+
+VPC → Endpoints → Create Endpoint.
+
+Service category: AWS services → Choose com.amazonaws.<region>.s3 (Gateway).
+
+Select VPC, and route tables to modify (the route tables used by subnets).
+
+Optionally add bucket policy to allow access only from VPCE.
+
+CLI
+aws ec2 create-vpc-endpoint --vpc-id vpc-0123 --service-name com.amazonaws.ap-south-1.s3 --route-table-ids rtb-0123 rtb-0456
+
+Use-case
+
+EC2 in private subnet writes to S3 without NAT gateway.
+
+19) Interface Endpoint — AWS PrivateLink
+What is Interface Endpoint?
+
+Elastic Network Interface (ENI) in your subnet that provides private connectivity to many AWS services and partner services (via PrivateLink). Does not use route tables.
+
+Services supported
+
+Many AWS services (e.g., CloudWatch Logs, ECR, SSM), AWS Marketplace/partner services.
+
+Steps (Console)
+
+VPC → Endpoints → Create endpoint → Service category AWS services → choose service (com.amazonaws.region.logs) or PrivateLink partner.
+
+Select subnets (ENIs created in them) and security groups to control access.
+
+Use-cases
+
+Private communication to service APIs without public internet.
+
+CLI
+aws ec2 create-vpc-endpoint --vpc-id vpc-0123 --service-name com.amazonaws.ap-south-1.ec2 --vpc-endpoint-type Interface --subnet-ids subnet-1 subnet-2 --security-group-ids sg-0abc
+
+
+Note: Interface endpoints have hourly and data processing charges.
+
+20) Site-to-Site VPN & Virtual Private Gateway
+Concept
+
+Connect on-prem datacenter to AWS VPC over IPsec VPN (customer gateway ↔ virtual private gateway). Supports dynamic routing (BGP) or static routes.
+
+Components
+
+Customer Gateway (CGW): your on-prem device public IP.
+
+Virtual Private Gateway (VGW): AWS-side VPN gateway attached to VPC.
+
+VPN Connection: IPsec tunnels (usually two for redundancy).
+
+Steps (high-level)
+
+Create Customer Gateway in AWS (specify on-prem public IP).
+
+Create Virtual Private Gateway (VPC → VPN) and Attach to VPC.
+
+Create VPN Connection between CGW and VGW (download VPN config for your vendor).
+
+Update route tables to route on-prem CIDR via VGW.
+
+On-prem device configure tunnels (use downloaded config).
+
+CLI example
+aws ec2 create-vpn-connection --type ipsec.1 --customer-gateway-id cgw-0123 --vpn-gateway-id vgw-0123 --options StaticRoutesOnly=true
+
+Use-cases
+
+Hybrid cloud, lift & shift, database replication.
+
+21) Egress-Only Internet Gateway (for IPv6)
+Purpose
+
+For IPv6-only instances to have outbound-only access to the internet while preventing inbound (unsolicited) IPv6 traffic.
+
+Key points
+
+IPv6 uses Egress-Only IGW; IPv4 uses NAT/IGW.
+
+Attach Egress-Only IGW to VPC and add route ::/0 to it in private subnet route table.
+
+Create (Console)
+
+VPC → Egress-Only Internet Gateways → Create Egress-Only IGW → Attach to VPC.
+
+CLI:
+
+aws ec2 create-egress-only-internet-gateway --vpc-id vpc-0123
+
+22) Consolidated Interview Q&A (Top VPC Questions)
+
+Q: What is a VPC?
+A: Virtual Private Cloud – isolated virtual network in AWS.
+
+Q: How to make subnet public?
+A: Attach IGW to VPC and add route 0.0.0.0/0 → igw in route table; ensure instances have public IP/EIP.
+
+Q: NAT Instance vs NAT Gateway — difference?
+A: NAT instance = self-managed EC2 with source/dest check disabled; NAT Gateway = managed AWS service, scalable, per-AZ, chargeable. NAT GW recommended.
+
+Q: Security Group vs NACL?
+A: SG = instance-level, stateful, allow-only. NACL = subnet-level, stateless, allows deny/allow.
+
+Q: What is VPC Peering?
+A: Private connection between two VPCs; non-transitive; needs route table entries.
+
+Q: When to use Transit Gateway?
+A: For connecting many VPCs at scale (hub-and-spoke) and consolidating on-prem connections.
+
+Q: What are VPC Endpoints?
+A: Private connectivity to AWS services: Gateway endpoint (S3/DDB) modifies route tables; Interface endpoints (PrivateLink) create ENIs in subnets.
+
+Q: Why use Flow Logs?
+A: To capture traffic metadata for security, audit, troubleshooting.
+
+Q: How to access private instance without bastion?
+A: Use AWS Systems Manager Session Manager (SSM) — recommended because no SSH keys/public IPs needed.
+
+Q: Can you peer VPCs with overlapping CIDR?
+A: No — CIDRs must not overlap for peering.
+
+Q: Is TGW transitive?
+A: TGW supports routing multiple VPCs via TGW — it’s effectively hub and can route (controlled by TGW route tables), but peering different TGWs is different. Transit Gateway supports transitive routing among attachments.
+
+Practical tips, best practices & cost notes
+
+Subnet sizing: leave headroom; avoid /28 small subnets.
+
+AZ design: spread across AZs for HA (ELB, ASG, DB Multi-AZ).
+
+NAT Gateway: create per AZ so private subnet traffic stays AZ-local (avoid cross-AZ charges).
+
+Security posture: default deny inbound in SGs; restrict egress if required.
+
+SSM over Bastion: prefer SSM Session Manager for secure, auditable remote access without opening SSH.
+
+Use Endpoints to remove need for NAT for S3/DDB access (reduces NAT egress costs).
+
+Flow Logs costs: choose S3 + Athena for long-term storage and analysis to save CloudWatch ingestion costs.
+
+VPC Peering vs TGW: use peering for small number of VPCs/simple cases; use TGW at scale.
+
+IPv6: if using IPv6, use Egress-Only IGW for outbound-only behavior.
+
+Useful AWS CLI snippets (recap)
+
+Create VPC:
+
+aws ec2 create-vpc --cidr-block 10.0.0.0/16
+
+
+Create subnet:
+
+aws ec2 create-subnet --vpc-id vpc-012 --cidr-block 10.0.1.0/24 --availability-zone ap-south-1a
+
+
+Create IGW & attach:
+
+aws ec2 create-internet-gateway
+aws ec2 attach-internet-gateway --vpc-id vpc-012 --internet-gateway-id igw-012
+
+
+Create NAT GW:
+
+aws ec2 allocate-address --domain vpc
+aws ec2 create-nat-gateway --subnet-id subnet-public --allocation-id eipalloc-0123
+
+
+Create VPC endpoint (S3):
+
+aws ec2 create-vpc-endpoint --vpc-id vpc-012 --service-name com.amazonaws.ap-south-1.s3 --route-table-ids rtb-012 rtb-034
+
+
+Create Transit Gateway:
+
+aws ec2 create-transit-gateway --description "MyTGW"
+aws ec2 create-transit-gateway-vpc-attachment --transit-gateway-id tgw-012 --vpc-id vpc-012 --subnet-ids subnet1 subnet2
+
+
+Create Flow Log:
+
+aws ec2 create-flow-logs --resource-type VPC --resource-ids vpc-012 --traffic-type ALL --log-group-name vpc-flowlogs --deliver-logs-permission-arn arn:aws:iam::123:role/flowlogs
+
+Final words — one single place to start labbing
+
+Suggested small lab plan (do in order):
+
+Create VPC + 4 subnets (publicA/privateA/publicB/privateB).
+
+Create IGW + public route table.
+
+Launch web server in public subnet; test.
+
+Launch app server in private subnet; configure NAT gateway for private internet.
+
+Set up bastion + test SSH (or SSM).
+
+Create S3 gateway endpoint and test private S3 access from private instance.
+
+Enable Flow Logs to S3 and run a sample Athena query.
+
+Create VPC peering to another VPC (or simulate with second VPC).
+
+Optional: create Transit Gateway and attach multiple VPCs.
