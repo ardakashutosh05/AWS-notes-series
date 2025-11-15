@@ -1,0 +1,394 @@
+✅ AWS Lambda – Full Complete Notes (ALL Topics in One Place)
+
+(Marathi + English | Detailed | Practical | Interview Ready)
+
+🔥 1. AWS Lambda – What is Serverless?
+
+Lambda = Serverless Compute Service
+Means:
+
+No server management
+
+Pay only when your function runs
+
+Automatic scaling
+
+Event-driven execution
+
+Highly available
+
+Example:
+S3 upload → Trigger Lambda → Process image → Save to S3.
+
+Benefits:
+
+Zero administration
+
+Auto scaling
+
+High availability
+
+Pay-per-use
+
+Integrates with 200+ AWS services
+
+🔥 2. Create Your First Lambda Function
+
+Steps:
+
+AWS Console → Lambda
+
+Create function → Runtime: Python/Node/Java
+
+Code editor → Write function
+
+Test → Event input → Run
+
+View logs → CloudWatch
+
+Example function (Python):
+
+def lambda_handler(event, context):
+    return {"message": "Hello from Lambda!"}
+
+🔥 3. Passing Data to Lambda (Event Object Explained)
+
+event object = input for function
+context object = information about function runtime
+
+Example event:
+
+{
+  "name": "Ashu",
+  "job": "DevOps"
+}
+
+
+Access inside Lambda:
+
+name = event["name"]
+
+🔥 4. Lambda Function URL + Postman Testing
+
+Function URL helps you call Lambda directly without API Gateway.
+
+Steps:
+
+Lambda → Function URL → Enable
+
+Auth → NONE
+
+Copy URL
+
+Postman → GET/POST → Enter JSON
+
+Hit Send → Receive response
+
+🔥 5. Lambda Hot Start vs Cold Start
+Cold Start
+
+Happens when Lambda container is created first time
+
+Time delay 200ms–2s
+
+Hot Start
+
+Container warm
+
+Execution very fast (few ms)
+
+Reduce Cold Starts:
+
+Enable Provisioned Concurrency
+
+Use lighter runtimes (Node/Python)
+
+Avoid huge libraries
+
+🔥 6. Lambda General Configuration Settings
+
+You can configure:
+
+Setting	Meaning
+Memory	128MB–10GB
+Timeout	1 sec – 15 min
+VPC Access	Private subnet access
+Environment Variables	Configuration values
+IAM Role	What Lambda can access
+Ephemeral Storage (/tmp)	Default 512 MB → Max 10 GB
+🔥 7. Context Object in Lambda
+
+context = info about execution environment
+
+Example:
+
+context.function_name  
+context.memory_limit_in_mb  
+context.aws_request_id
+
+
+Used for debugging, logging, optimization.
+
+🔥 8. Lambda – Synchronous vs Asynchronous Execution
+Synchronous (Real-time response)
+
+Examples:
+
+API Gateway
+
+ALB
+
+Function URLs
+
+CLI invoke
+
+Client waits for result.
+
+Asynchronous (Event-based)
+
+Examples:
+
+S3 events
+
+SNS
+
+EventBridge
+
+SES
+
+Lambda queues event → retries 3 times → error → goes to DLQ.
+
+🔥 9. Dead Letter Queue (DLQ) in Lambda
+
+If Lambda fails → send the failed event to:
+
+SQS Queue, OR
+
+SNS Topic
+
+Used for debugging failed executions.
+
+🔥 10. Trigger Lambda on S3 Object Upload
+
+Steps:
+
+S3 → Properties → Event Notifications
+
+Select PUT event
+
+Target → Lambda function
+
+Save
+
+Lambda runs every time an object uploads.
+
+🔥 11. Trigger Lambda from Application Load Balancer (ALB)
+
+ALB → Target Group → Lambda.
+Used for HTTP request handling without servers.
+
+🔥 12. Upload Lambda Code from S3 Bucket
+
+Useful for big code (.zip file):
+
+Steps:
+
+Zip your code
+
+Upload to S3
+
+Lambda → Upload from S3
+
+Select S3 object
+
+🔥 13. Use External Libraries Without Layers
+
+Local machine steps:
+
+mkdir project
+cd project
+pip install requests -t .
+zip -r function.zip .
+
+
+Upload function.zip → Lambda.
+
+🔥 14. Using Layers in Lambda
+
+Layers = Reusable code/packages.
+
+Steps:
+
+zip your dependencies
+
+Create Layer
+
+Add Layer to Lambda
+
+Use it in your code
+
+🔥 15. Publish Your Own Lambda Layer
+
+Your custom utilities can become layers:
+
+database helpers
+
+common code
+
+shared python functions
+
+Good for multi-team architecture.
+
+🔥 16. Lambda Versioning
+
+Every deployment = new version.
+
+Version is IMMUTABLE.
+
+Used for:
+
+Rollbacks
+
+Production stability
+
+Testing
+
+🔥 17. Lambda Aliases
+
+Aliases = Pointers to versions (prod, dev, test)
+
+Example:
+
+prod → version 7  
+dev → version 13  
+
+
+You can shift traffic gradually using aliases (blue-green).
+
+🔥 18. Resource Policy + IAM Role in Lambda
+IAM Role
+
+What Lambda CAN DO (permissions).
+Example:
+
+Access S3
+
+Access DynamoDB
+
+Write logs to CloudWatch
+
+Resource Policy
+
+Who CAN CALL Lambda.
+Example:
+
+API Gateway
+
+S3
+
+SNS
+
+Another AWS Account
+
+🔥 19. Lambda in VPC
+
+Lambda can run inside a VPC if it needs:
+
+RDS Database
+
+ElastiCache
+
+Private services
+
+Needs:
+
+Subnet
+
+Security group
+
+NAT if internet required
+
+🔥 20. Creating Events & Testing Lambda
+
+Test events types:
+
+S3
+
+API Gateway
+
+DynamoDB
+
+SNS
+
+Custom event JSON
+
+Good for debugging and unit testing.
+
+🔥 21. Connect Lambda to RDS Database (MySQL/Postgres)
+
+Steps:
+
+Put Lambda in same VPC as RDS
+
+Add security group rules
+
+Install MySQL/Postgres library
+
+Use connection pool
+
+Query database
+
+Python Example:
+
+import pymysql
+
+conn = pymysql.connect(
+    host="db.endpoint",
+    user="admin",
+    password="password",
+    db="mydb"
+)
+
+def lambda_handler(event, context):
+    with conn.cursor() as cur:
+        cur.execute("SELECT * FROM users")
+        data = cur.fetchall()
+    return data
+
+🔥 22. Reserved vs Provisioned Concurrency
+Reserved Concurrency
+
+Limits max executions
+
+Prevents throttling
+
+Guarantees capacity for your function
+
+Provisioned Concurrency
+
+Pre-warms Lambda
+
+Zero cold starts
+
+Used for production APIs
+
+🔥 23. What is the REAL Purpose of API Gateway?
+
+API Gateway =
+
+Full HTTP API management
+
+Authentication
+
+Rate limiting
+
+WAF security
+
+Integrations
+
+Custom domains
+
+Logging + Metrics
+
+Function URL is simple
+API Gateway is Enterprise-level API mgmt tool
