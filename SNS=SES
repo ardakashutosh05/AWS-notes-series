@@ -1,0 +1,205 @@
+✅ AMAZON SIMPLE EMAIL SERVICE (SES) – FULL DETAILED NOTES
+⭐ 1. Amazon Simple Email Service – Where / How we can use it? (In Hindi)
+📌 SES Kya Hai?
+
+Amazon SES (Simple Email Service) ek scalable, secure, reliable email sending platform hai jise hum transactional, marketing, aur bulk emails send karne ke liye use karte hain.
+
+🔧 Use Cases
+Use Case	Example
+🔐 Transactional Emails	Login OTP, Password Reset, Order Confirmation
+📢 Marketing Emails	Promotion, Newsletter, Offers
+🛠️ System Alerts	Monitoring Alerts, Error Logs, Notification
+🧭 Application Emails	Contact Us form, Signup Email
+⭐ 2. Amazon SES – How to Verify Domain (In Hindi)
+📌 Domain Verification Kyu Zaroori?
+
+AWS ko prove karna padta hai ki aap domain ke owner ho. Yeh anti-spam / security ke liye hota hai.
+
+🔧 Steps
+Step 1 – Open SES → Verified Identities → Create Identity
+
+Identity type: Domain
+Enter: example.com
+
+Step 2 – AWS Aapko 5 DNS Records dega
+Record Type	Purpose
+TXT (Domain Verification)	Domain Ownership verify karta hai
+SPF (TXT)	Sender policy
+DKIM (3 CNAME Records)	Email Signing
+Step 3 – Go to Route53 → Hosted Zone
+
+Add all 4–5 records.
+
+Step 4 – SES Dashboard
+
+Domain → Status becomes Verified + DKIM: Success
+
+🔥 Result
+
+Aap verified domain se unlimited emails send kar sakte ho.
+
+Better deliverability, spam kam.
+
+⭐ 3. Why Emails Go to SPAM & How to Prevent (In Hindi)
+📌 Common SPAM Reasons
+
+❌ SPF record nahi hai
+
+❌ DKIM signing nahi hai
+
+❌ DMARC missing
+
+❌ Poor IP Reputation
+
+❌ High bounce rate
+
+❌ Unverified email/domain
+
+❌ Body contains spam keywords
+
+🛡️ How to Prevent Spam
+1. Setup SPF
+v=spf1 include:amazonses.com -all
+
+2. Setup DKIM
+
+Enable from SES → Add 3 CNAME records.
+
+3. Setup DMARC
+
+Add one TXT record:
+
+_dmarc.example.com
+v=DMARC1; p=none; rua=mailto:postmaster@example.com
+
+4. Sender Reputation Maintain Karna
+
+Bounce rate < 2%
+
+Complaint rate < 0.1%
+
+5. Warm-up Emails
+
+Bulk emails ko dhire dhire bhejo.
+
+⭐ 4. Customize MAIL-FROM Domain in Amazon SES (Hindi)
+📌 Mail-From Domain Kya Hai?
+
+By default SES mail-from hota hai:
+
+something@amazonses.com
+
+Custom Mail-From se aap apna domain set karte ho:
+
+noreply@example.com
+
+🔧 Steps
+
+SES → Verified Domain
+
+Edit Mail-From
+
+Custom name: mail.example.com
+
+AWS aapko 2 DNS records dega:
+
+MX Record
+
+SPF (TXT)
+
+Add to Route53 → Hosted Zone
+
+Mail-From status: Verified
+
+⭐⭐ COMPLETE SNS (Simple Notification Service) ⭐⭐
+⭐ 5. Simple Notification Service – Send First Notification (Hindi)
+📌 SNS Kya Hai?
+
+SNS ek pub/sub (publish-subscribe) messaging service hai jisme:
+
+Publisher → message send karta hai
+
+Subscribers → message receive karte hain
+
+🎯 Use Cases
+
+Alarm notifications
+
+Server alerts
+
+SMS
+
+Email notifications
+
+Microservices communication
+
+⭐ 6. Why Should We Use SNS? – SNS Configurations (Hindi)
+📌 SNS Kyu Use Kare?
+Feature	Benefit
+📨 Fan-out messaging	1 message → multiple subscribers
+📡 Multi-protocol	Email, SMS, HTTP, Lambda etc.
+💵 Low cost	Very cheap service
+📈 Scalable	Billions of messages per day
+🔐 Secure	IAM + encryption
+🔧 SNS Configuration Types
+Configuration	Meaning
+Standard Topic	At-least-once delivery
+FIFO Topic	Ordered messages
+Delivery Retry Policy	Agar endpoint fail ho jaye
+Access Policy	Kaun publish kar sakta hai
+Encryption (KMS)	Secure messages
+⭐ 7. SNS – Send Mobile SMS Notification (Hindi)
+🔧 Steps
+Step 1 – Create SNS Topic
+
+Type: Standard
+Name: sms-topic
+
+Step 2 – Create Subscription
+
+Protocol: SMS
+Endpoint: +91XXXXXXXXXX
+
+Step 3 – Publish Message
+
+Topic → Publish → Message
+
+Phone pe instant SMS aa jayega.
+
+⭐ 8. SNS – HTTP/HTTPS Endpoint Notification (In Hindi)
+📌 Use Case
+
+Webhook systems, monitoring, alert systems.
+
+🔧 Flow
+SNS TOPIC → HTTPS ENDPOINT → Receive JSON Payload
+
+🔧 Steps
+1. Create Topic
+
+Name: http-alert-topic
+
+2. Add Subscription
+
+Protocol: HTTPS
+Endpoint: https://yourserver.com/endpoint
+
+3. Confirm Subscription
+
+SNS aapke endpoint pe confirmation JSON bhejega.
+You must respond with: SubscribeURL Confirmation
+
+4. Send Message
+
+Topic → Publish → Endpoint receives JSON:
+
+{
+  "Type": "Notification",
+  "Message": "Server Down!"
+}
+
+🎉 FULL TOPIC COMPLETED – AMAZON SES + SNS
+
+
+
+
