@@ -1,0 +1,377 @@
+📘 AWS CloudWatch – Complete Master Notes (All Topics Combined)
+
+(Production level + Interview-ready + Architecture + Practical Labs)
+
+🟦 1. What is Amazon CloudWatch? (Deep Dive)
+
+Amazon CloudWatch is a centralized monitoring service in AWS used for:
+
+✔ Monitoring EC2 performance (CPU, RAM, Disk IO, Network)
+✔ Monitoring RDS, DynamoDB, Lambda, API Gateway
+✔ Collecting Application Logs from EC2, ECS, EKS
+✔ Creating Dashboards
+✔ Triggering alarms for automation
+✔ Creating custom metrics
+✔ Cost + Billing alarms
+✔ Real-time log queries using Log Insights
+
+🟩 2. CloudWatch Components Overview (Concept Map)
+CloudWatch
+│
+├── Metrics
+│   ├── AWS Default Metrics
+│   ├── Custom Metrics (by CLI, API, Agent)
+│   └── Namespaces
+│
+├── Alarms
+│   ├── Simple Alarm
+│   ├── Billing Alarm
+│   ├── Composite Alarm
+│   └── Log-based Alarm
+│
+├── Logs
+│   ├── Log Group
+│   ├── Log Stream
+│   ├── CW Agent Logs
+│   ├── Application Logs
+│   └── Log Insights Query
+│
+├── Events (EventBridge)
+│
+└── Dashboards
+
+🟦 3. CloudWatch Namespace + Metrics + Dashboard
+✔ What is a Namespace?
+
+A Namespace is a container that stores related metrics.
+
+Examples:
+
+Service	Namespace
+EC2	AWS/EC2
+RDS	AWS/RDS
+Load Balancer	AWS/ApplicationELB
+Lambda	AWS/Lambda
+Custom Metrics	Custom/<your-app>
+
+If you create custom metrics using CLI, they must be stored inside:
+
+--namespace "Custom/EC2App"
+
+✔ What is a Metric?
+
+A metric is a time-ordered set of data points.
+
+Examples:
+
+CPUUtilization
+
+NetworkIn
+
+NetworkOut
+
+DiskReadOps
+
+RequestCount
+
+Latency
+
+For EC2 → metrics are collected every 5 min (standard) or 1 min (detailed monitoring).
+
+✔ CloudWatch Dashboard
+
+A dashboard is a customized monitoring screen.
+
+You can add:
+
+Graphs
+
+Line charts
+
+Single-number widgets
+
+Custom metrics
+
+Logs widgets
+
+How to create Dashboard (Steps)
+
+Open → CloudWatch
+
+Go to Dashboards
+
+Click → “Create Dashboard”
+
+Add widgets:
+✔ Line
+✔ Stacked area
+✔ Number
+✔ Text
+
+Choose metrics (e.g., CPUUtilization)
+
+Save dashboard
+
+Example: Dashboard for EC2 Monitoring
+
+Widgets include:
+
+✔ CPU Utilization Graph
+✔ Memory Utilization (via agent)
+✔ Disk Usage (via agent)
+✔ Network Bandwidth
+
+Memory / Disk metrics require CloudWatch agent.
+
+🟥 4. CloudWatch Alarm (Trigger Alerts)
+
+(VERY IMPORTANT for interview)
+
+An alarm monitors a metric and sends notification if threshold is crossed.
+
+✔ Types of Alarms
+1. Static Alarm
+
+CPU > 80%
+
+2. Anomaly Detection Alarm
+
+CloudWatch learns pattern and alerts outside normal range.
+
+3. Composite Alarm
+
+Combination of 2 or more alarms.
+Used for production environments to prevent false alerts.
+
+✔ CloudWatch Alarm Workflow (Diagram)
+Metric → Alarm → SNS Topic → Email/SMS/Slack/Lambda
+
+✔ Example: Create CPU > 80% Alarm
+
+Threshold:
+
+CPUUtilization
+
+GreaterThanThreshold
+
+80%
+
+2 datapoints out of 3
+
+Actions:
+
+Send Email (SNS)
+
+Stop Instance (optional)
+
+Auto scale (optional)
+
+🟧 5. Billing Alarm (Mandatory for every AWS Account)
+
+Billing alarms work on EstimatedCharges metric inside the special namespace:
+
+AWS/Billing
+
+
+⚠ Billing metric is only available in US East (N. Virginia) Region
+
+Steps to Create Billing Alarm
+
+Go → CloudWatch
+
+Region set to us-east-1
+
+Metrics → Billing
+
+Choose: EstimatedCharges
+
+Set threshold → e.g., > ₹500
+
+Send SNS email
+
+🟫 6. Composite Alarms (Deep Explanation)
+
+Composite alarm = combines multiple alarms using Boolean logic (AND/OR)
+
+Example:
+
+CPUAlarm
+
+NetworkAlarm
+
+Composite Alarm triggers only when:
+
+CPUAlarm == ALARM AND NetworkAlarm == ALARM
+
+
+Use-case:
+
+✔ Reduce false positives
+✔ Trigger only when system failure is confirmed
+✔ High reliability systems
+
+🟦 7. CloudWatch Agent (Install & Configure)
+
+Default EC2 metrics DO NOT include:
+
+❌ RAM Usage
+❌ Disk Usage
+❌ Disk Space %
+❌ Processes
+❌ Application Logs
+
+For this CloudWatch Agent is required.
+
+Install Agent (Amazon Linux)
+sudo yum install amazon-cloudwatch-agent -y
+
+Create config file
+sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-config-wizard
+
+
+You select:
+
+✔ CPU
+✔ Memory
+✔ Disk
+✔ Logs
+
+Output is stored at:
+
+/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+
+Start Agent
+sudo systemctl start amazon-cloudwatch-agent
+sudo systemctl enable amazon-cloudwatch-agent
+
+
+Now → Memory & Disk metrics appear in:
+
+CWAgent Namespace
+
+🟩 8. Sending Application Logs to CloudWatch (Full Deep Dive)
+
+You want logs → CloudWatch → Log Group → Log Streams.
+
+Example path:
+
+/var/log/nginx/access.log
+/var/log/app/app.log
+
+
+Add in agent config:
+
+"logs": {
+  "logs_collected": {
+    "files": {
+      "collect_list": [
+        {
+          "file_path": "/var/log/app.log",
+          "log_group_name": "AppLogs",
+          "log_stream_name": "{instance_id}"
+        }
+      ]
+    }
+  }
+}
+
+
+Restart Agent:
+
+sudo systemctl restart amazon-cloudwatch-agent
+
+🟧 9. CloudWatch Log Insights (Execute Queries on Logs)
+
+CloudWatch Log Insights is like SQL for logs.
+
+🔥 Important Queries Example
+1. Find error events
+fields @timestamp, @message
+| filter @message like /ERROR/
+| sort @timestamp desc
+
+2. Count errors per hour
+stats count(*) by bin(1h)
+
+3. Find IPs making most requests
+fields @message
+| parse @message "[ip=*] *" as client_ip
+| stats count(*) by client_ip
+
+4. Latency analysis
+filter latency > 200
+| stats avg(latency) by url
+
+🟥 10. Create Alarm Based on Logs (IMPORTANT)
+
+Log metric filter → creates Custom Metric → Alarm can be configured.
+
+Example: Trigger alarm when the word “ERROR” appears
+
+CloudWatch Logs → Log Group
+
+Create Metric Filter
+
+Filter pattern:
+
+ERROR
+
+
+Assign to namespace:
+
+Custom/ErrorLogs
+
+
+Metric name: ErrorCount
+
+Create Alarm → if ErrorCount > 0
+
+🟩 11. Creating Custom Metrics (Using CLI)
+
+Custom metric → your own application sends data to CloudWatch.
+
+CLI Example: Send random CPU metric
+aws cloudwatch put-metric-data \
+  --metric-name AppCPU \
+  --namespace Custom/MyApp \
+  --value 42
+
+With Dimensions
+aws cloudwatch put-metric-data \
+  --metric-name RequestCount \
+  --namespace Custom/WebApp \
+  --dimensions InstanceID=i-123456 \
+  --value 10
+
+🟦 12. CloudWatch Cleanup (Remove unused resources)
+Delete Log Groups
+aws logs delete-log-group --log-group-name "/aws/ec2/app"
+
+Delete Alarms
+aws cloudwatch delete-alarms --alarm-names CPUAlarm
+
+Delete Dashboard
+aws cloudwatch delete-dashboards --dashboard-names MyDashboard
+
+Delete Metric Filters
+aws logs delete-metric-filter \
+  --log-group-name AppLogs \
+  --filter-name ErrorFilter
+
+⭐ FINAL SUMMARY (Interview Level)
+Topic	Explanation
+Dashboard	Custom monitoring UI
+Alarm	Threshold-based alerts
+Billing Alarm	Avoid cost overrun
+Composite Alarm	Combine multiple alarms
+CloudWatch Agent	RAM, Disk, App logs
+Log Insights	Query logs like SQL
+Log Metric Filter	Create metric from logs
+Custom Metric	App-level metrics
+Cleanup	Remove unnecessary resources
+
+
+
+
+
+
