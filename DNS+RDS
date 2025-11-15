@@ -1,0 +1,389 @@
+=========================================
+PART–1 : Route53 Hybrid DNS (Deep Notes)
+=========================================
+
+Hybrid DNS म्हणजे On-Premise Network + AWS VPC मधील DNS Integration.
+हे AWS मध्ये Route53 Resolver Inbound & Outbound Endpoints वापरून achieve होते.
+
+⭐ 1. Hybrid DNS – What / Why?
+👉 समस्या:
+
+On-prem servers ला AWS VPC मधील services resolve करता येत नाही.
+
+AWS EC2 ला on-prem DNS records resolve करता येत नाहीत.
+
+👉 Solution:
+
+AWS Route53 → Resolver Endpoints:
+
+Inbound Endpoint → On-prem → AWS
+
+Outbound Endpoint → AWS → On-prem
+
+⭐ 2. DNS Inbound Endpoint (Deep Explanation)
+🔹 वापर:
+
+On-prem servers AWS VPC मधील Private DNS resolve करण्यासाठी.
+
+Example:
+
+On-prem server:
+
+db.dev.aws.local → resolve inside AWS
+
+कसे काम करते?
+
+On-premises DNS Server → forward rule → Route53 Resolver Inbound Endpoint → VPC’s DNS resolver
+
+डायग्राम:
+On-Prem DNS → Resolver Inbound → AWS VPC
+
+Inbound Endpoint Requirements:
+
+✔ ENIs created in 2 subnets
+✔ Security groups allow UDP/TCP 53
+✔ On-prem firewall allows DNS traffic
+
+⭐ 3. DNS Outbound Endpoint (Deep Explanation)
+वापर:
+
+AWS EC2 machine ला On-prem DNS resolve करण्यासाठी.
+
+Example:
+
+AWS EC2:
+
+corp.local → on-prem DNS server
+
+कसे काम करते?
+
+EC2 → Route53 Resolver → Outbound Endpoint → On-prem DNS server
+
+डायग्राम:
+AWS EC2 → Resolver Outbound → On-Prem DNS Server
+
+Requirements:
+
+✔ On-prem DNS IP whitelisted
+✔ VPC to on-prem connectivity (VPN / DX)
+
+⭐ 4. Cleaning Up Hybrid DNS
+
+Delete in order:
+
+Resolver Rules
+
+Outbound Endpoint
+
+Inbound Endpoint
+
+Hosted Zone
+
+ENI cleanup
+
+=========================================
+PART–2 : Amazon RDS (FULL Deep Notes + ALL Topics)
+=========================================
+⭐ 1. Amazon RDS – Overview
+
+RDS (Relational Database Service) = Fully Managed SQL databases
+Supports:
+
+MySQL
+
+PostgreSQL
+
+MariaDB
+
+Oracle
+
+SQL Server
+
+Aurora (AWS-built)
+
+RDS automates:
+
+✔ Backups
+✔ Patching
+✔ Updates
+✔ Monitoring
+✔ Failover
+✔ Replication
+✔ Scaling
+
+⭐ 2. Create First RDS Database (Deep Steps)
+Step-by-step:
+
+AWS Console → RDS
+
+Create Database
+
+Engine: MySQL/PostgreSQL/etc
+
+Templates:
+
+Dev/Test
+
+Production
+
+Instance size: db.t3.micro (Free tier)
+
+Storage: GP3
+
+Connectivity:
+
+VPC
+
+Subnets
+
+Public Access (No recommended)
+
+Security Group → Allow port 3306
+
+Backup / Maintenance config
+
+Create DB
+
+⭐ 3. Connect to RDS Instance
+1. From EC2:
+mysql -h <RDS-ENDPOINT> -u admin -p
+
+2. From SQL Workbench:
+
+Hostname: RDS endpoint
+
+Port: 3306
+
+SSL optional
+
+⭐ 4. What is Read Replica? (Deep Explanation)
+
+Read Replica = copy of database used ONLY for reads.
+
+Use Cases:
+
+High read workload
+
+Reporting queries
+
+Analytics
+
+Offloading read traffic from primary DB
+
+Support:
+
+MySQL
+
+PostgreSQL
+
+MariaDB
+
+Aurora
+
+Creation:
+
+RDS → Actions → Create Read Replica
+
+Traffic Split Example:
+
+Primary → Writes
+
+Replica → Reads
+
+⭐ 5. Multi-AZ in RDS
+
+Multi-AZ = High Availability
+Primary DB + Standby DB (different AZ)
+
+Failover events:
+
+Primary failure
+
+Patch
+
+AZ outage
+
+✔ Automatic failover
+✔ Sync replication
+✔ No data loss
+
+⭐ 6. What is RDS Proxy?
+
+RDS Proxy = Connection pooling + efficient DB connectivity layer.
+
+Why use Proxy?
+
+Apps create many DB connections → DB overload
+
+Proxy maintains connection pool
+
+Apps connect to Proxy, Proxy connects to DB
+
+Benefits:
+
+✔ Fast failover
+✔ Reduced connection storms
+✔ Better performance
+✔ Secure (Secrets Manager integration)
+
+⭐ 7. Delete RDS, Replica, Proxy
+
+Order:
+
+Delete Read Replicas
+
+Delete Proxy
+
+Delete RDS database
+
+Must:
+
+Disable deletion protection
+
+Optionally create final snapshot
+
+⭐ 8. Amazon Aurora – Create First Instance
+
+Aurora = Cloud-native MySQL/Postgres compatible DB
+Features:
+
+5× performance of MySQL
+
+Auto-healing
+
+Shared storage (6 copies)
+
+Multi-master
+
+Steps:
+
+Create Aurora cluster
+
+Writer instance
+
+Reader instances
+
+Choose instance class
+
+Configure VPC & subnets
+
+Create cluster
+
+⭐ 9. Aurora Endpoints – Deep Dive
+
+Aurora supports multiple endpoints:
+
+Endpoint	Purpose
+Writer	Only write + read
+Reader	Load-balanced reads
+Custom	User-defined set of instances
+Instance	Specific instance endpoint
+Example:
+writer: cluster-123.writer.rds.amazonaws.com
+reader: cluster-123.reader.rds.amazonaws.com
+
+⭐ 10. Aurora Read Replica
+
+Aurora supports:
+✔ In-region replicas
+✔ Cross-region replicas
+✔ Reader endpoint auto-load-balanced
+
+⭐ 11. Delete Aurora Cluster / Replica
+
+Steps:
+
+Remove replicas
+
+Delete cluster
+
+Delete subnet groups
+
+Delete parameter groups
+
+⭐ 12. Cross Region Read Replica – Promote Replica
+Use:
+
+Disaster Recovery (DR)
+
+Global read traffic
+
+Promote Read Replica → becomes independent DB cluster.
+
+Steps:
+
+Create cross-region replica
+
+Promote
+
+Apps switch endpoint
+
+⭐ 13. Parameter Groups – Changing DB Config
+
+Parameter Group = config template for DB engine settings.
+
+Use:
+
+max_connections
+
+autocommit
+
+buffer cache size
+
+Apply:
+
+Some parameters → dynamic
+
+Some → require reboot
+
+=========================================
+Interview Questions (ALL RDS Topics)
+=========================================
+Q1: RDS आणि Aurora मध्ये फरक?
+
+Aurora = AWS optimized, performance 5× MySQL, 3× Postgres.
+
+Q2: Read Replica कशासाठी वापरतात?
+
+Read-heavy workloads scale करण्यासाठी.
+
+Q3: Multi-AZ vs Read Replica?
+
+Multi-AZ → high availability
+
+Read Replica → read scalability
+
+Q4: RDS Proxy का वापरतात?
+
+Connection pooling, fast failover, fewer DB connections.
+
+Q5: Aurora Writer आणि Reader endpoint फरक?
+
+Writer = Read + Write
+
+Reader = Read only (auto load balanced)
+
+Q6: Parameter group म्हणजे काय?
+
+Database configuration values store करणारा template.
+
+Q7: Cross Region Read Replica कधी वापरतात?
+
+Disaster Recovery आणि multi-region read traffic साठी.
+
+Q8: RDS मध्ये scaling कसे होते?
+
+Vertical scaling (instance type)
+
+Horizontal (read replicas)
+
+Q9: Aurora मध्ये storage कसे काम करते?
+
+Shared storage layer, 6 copies across 3 AZs.
+
+Q10: RDS deletion protection म्हणजे काय?
+
+Accidental delete होऊ नये म्हणून lock.
+
+=========================================================
+✔ Your Entire Hybrid DNS + RDS Notes Are Complete
