@@ -1,4 +1,8 @@
+******************
+******************
 # AWS-notes-series
-aws servise notes qustion and answer
-hi am ashutosh ardak 
-writer and diracter 
+AWS service notes question and answer
+hi, I am ashutosh ardak 
+writer and director 
+******************
+******************
