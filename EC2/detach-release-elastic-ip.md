@@ -14,6 +14,7 @@ Go to EC2 Dashboard → Network & Security → Elastic IPs
 
 Select the Elastic IP currently associated
 
+
 Click Actions → Disassociate Elastic IP
 
 Confirm disassociation
@@ -71,3 +72,5 @@ Q5: Difference between detach and release?
 Detach → remove EIP from instance, keep it in your account
 
 Release → return EIP to AWS, it’s no longer yours
+
+#####################################################
